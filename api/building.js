@@ -3,15 +3,19 @@ const BUILDING_API_KEY = 'mX7nd4kSo5SUrlBEp4FVl2NqZIORFTqKdRXaY2Z2dGwTMIGpEkWDOl
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*')
   const { type, sigunguCd, bjdongCd, bun, ji } = req.query
-  const endpoint = type === 'floor' ? 'getBrFlrOulnInfo' : 'getBrTitleInfo'
+  const endpointMap = {
+    title: 'getBrTitleInfo',
+    floor: 'getBrFlrOulnInfo',
+    unit: 'getBrExposPubuseAreaInfo',
+  }
+  const endpoint = endpointMap[type] || 'getBrTitleInfo'
   const params = new URLSearchParams({
     serviceKey: BUILDING_API_KEY,
-    sigunguCd,
-    bjdongCd,
+    sigunguCd, bjdongCd,
     bun: String(bun).padStart(4, '0'),
     ji: String(ji).padStart(4, '0'),
     pageNo: '1',
-    numOfRows: type === 'floor' ? '100' : '10',
+    numOfRows: type === 'unit' ? '500' : type === 'floor' ? '100' : '10',
     _type: 'json',
   })
   try {
