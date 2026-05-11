@@ -27,19 +27,27 @@ export default function SearchPage({ onSearch }) {
   const openAddr = () => {
     new window.daum.Postcode({
      oncomplete: (data) => {
-  console.log('다음 주소 데이터:', JSON.stringify(data))
   const addr = data.roadAddress || data.jibunAddress
   setAddress(addr)
+
+  // jibunAddress에서 번지 파싱
+  const jibun = data.jibunAddress || ''
+  const parts = jibun.trim().split(' ')
+  const bunjiStr = parts[parts.length - 1] || '0'
+  const bunjiArr = bunjiStr.split('-')
+  const bun = bunjiArr[0] || '0'
+  const ji = bunjiArr[1] || '0'
+
+  console.log('파싱결과:', { sido: data.sido, sigungu: data.sigungu, bname: data.bname, bun, ji })
+
   setJibunData({
     siDo: data.sido,
     siGunGu: data.sigungu,
     eupmyundong: data.bname,
-    bun: data.bnum ? data.bnum.split('-')[0] || '0' : '0',
-    ji: data.bnum ? data.bnum.split('-')[1] || '0' : '0',
+    bun,
+    ji,
   })
 },
-    }).open()
-  }
 
   return (
     <div style={S.wrap}>
