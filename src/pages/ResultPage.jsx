@@ -133,20 +133,22 @@ export default function ResultPage({ data, onBack }) {
             <table style={{width:'100%', borderCollapse:'collapse'}}>
               <thead>
                 <tr>
-                  <th style={S.th}>층</th>
-                  <th style={S.th}>용도</th>
-                  <th style={{...S.th, textAlign:'right'}}>면적</th>
+<th style={S.th}>층</th>
+<th style={S.th}>용도구분</th>
+<th style={S.th}>세부용도</th>
+<th style={{...S.th, textAlign:'right'}}>면적</th>
                 </tr>
               </thead>
-              <tbody>
-                {floors.map((f,i) => (
-                  <tr key={i}>
-                    <td style={S.td}>{f.floor}</td>
-                    <td style={S.td}>{f.purpose}</td>
-                    <td style={{...S.td, textAlign:'right', fontWeight:'600'}}>{f.area}</td>
-                  </tr>
-                ))}
-              </tbody>
+<tbody>
+  {floors.map((f, i) => (
+    <tr key={i}>
+      <td style={S.td}>{f.floor}</td>
+      <td style={{...S.td, fontWeight:'600', color: f.purpose.includes('1종') ? '#2563eb' : f.purpose.includes('2종') ? '#16a34a' : '#1a1a1a'}}>{f.purpose}</td>
+      <td style={{...S.td, color:'#888'}}>{f.detailPurpose}</td>
+      <td style={{...S.td, textAlign:'right', fontWeight:'600'}}>{f.area}</td>
+    </tr>
+  ))}
+</tbody>
             </table>
           ) : (
             <div style={{fontSize:'13px', color:'#aaa'}}>층별 정보가 없습니다</div>
