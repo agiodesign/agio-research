@@ -1,3 +1,26 @@
+const PURPS = {
+  '01000': '단독주택',
+  '02000': '공동주택',
+  '03000': '제1종근린생활시설',
+  '04000': '제2종근린생활시설',
+  '05000': '문화및집회시설',
+  '06000': '종교시설',
+  '07000': '판매시설',
+  '08000': '운수시설',
+  '09000': '의료시설',
+  '10000': '교육연구시설',
+  '11000': '노유자시설',
+  '12000': '수련시설',
+  '13000': '운동시설',
+  '14000': '업무시설',
+  '15000': '숙박시설',
+  '16000': '위락시설',
+  '17000': '공장',
+  '18000': '창고시설',
+  '19000': '위험물저장및처리시설',
+  '20000': '자동차관련시설',
+}
+
 export async function getBuildingInfo(jibun) {
   const params = new URLSearchParams({
     type: 'title',
@@ -13,7 +36,7 @@ export async function getBuildingInfo(jibun) {
   if (!items) throw new Error('건축물대장 정보를 찾을 수 없습니다')
   const item = Array.isArray(items) ? items[0] : items
   return {
-    purpose: item.mainPurpsCdNm || '-',
+    purpose: PURPS[item.mainPurpsCd] || item.mainPurpsCdNm || '-',
     area: item.totArea ? `${parseFloat(item.totArea).toLocaleString()}㎡` : '-',
     floors: `지상 ${item.grndFlrCnt || 0}층 / 지하 ${item.ugrndFlrCnt || 0}층`,
     built: item.useAprDay ? `${item.useAprDay.substring(0,4)}년 (${new Date().getFullYear() - parseInt(item.useAprDay.substring(0,4))}년)` : '-',
@@ -37,11 +60,12 @@ export async function getFloorInfo(jibun) {
   const items = data?.response?.body?.items?.item
   if (!items) return []
   const arr = Array.isArray(items) ? items : [items]
-  const floorOrder = ['지하2층','지하1층','1층','2층','3층','4층','5층','6층','7층','8층','9층','10층']
+  const floorOrder = ['지하2층','지하1층','1층','2층','3층','4층','5층','6층','7층','8층','9층','10층','11층','12층','13층','14층','15층']
   return arr
     .map(f => ({
       floor: f.flrNoNm || '-',
-      purpose: f.mainPurpsCdNm || '-',
+      purpose: PURPS[f.mainPurpsCd] || '-',
+      detailPurpose: f.mainPurpsCdNm || '-',
       area: f.area ? `${parseFloat(f.area).toLocaleString()}㎡` : '-',
     }))
     .sort((a, b) => {
