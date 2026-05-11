@@ -43,4 +43,93 @@ function BarChart({ data }) {
           <div style={{flex:1,background:'#f0f0f0',borderRadius:'4px',height:'8px'}}>
             <div style={{width:`${(d.value/max)*100}%`,background:'#1a1a1a',borderRadius:'4px',height:'100%'}} />
           </div>
-          <div style={{width:'32px',fontSize:'11px',fontWeight:'600',co
+          <div style={{width:'32px',fontSize:'11px',fontWeight:'600',color:'#1a1a1a'}}>{d.value}%</div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+export default function ResultPage({ data, onBack }) {
+  const d = DUMMY
+  return (
+    <div style={S.wrap}>
+      <div style={S.header}>
+        <button style={S.backBtn} onClick={onBack}>← 돌아가기</button>
+        <div style={S.headerInfo}>
+          <div style={S.headerTitle}>{data.address} {data.detail}</div>
+          <div style={S.headerSub}>
+            {data.client && `고객: ${data.client}`}
+            {data.client && data.site && ' · '}
+            {data.site && `현장: ${data.site}`}
+            {' · 반경 500m 기준 분석'}
+          </div>
+        </div>
+      </div>
+
+      <div style={S.body}>
+        <div style={S.sectionFull}>
+          <div style={S.note}>⚠️ 현재 UI 확인용 샘플 데이터입니다. 공공API 연동 후 실제 데이터로 교체됩니다.</div>
+        </div>
+
+        {/* 건물 정보 */}
+        <div style={S.section}>
+          <div style={S.sectionTitle}>🏢 건물 정보</div>
+          {Object.entries({
+            '건물 용도': d.building.purpose,
+            '호실 면적': d.building.area,
+            '연면적': d.building.totalArea,
+            '층수': d.building.floors,
+            '준공연도': d.building.built,
+            '구조': d.building.structure,
+          }).map(([k,v]) => (
+            <div key={k} style={S.infoRow}>
+              <span style={S.infoLabel}>{k}</span>
+              <span style={k==='건물 용도' ? S.badge : S.infoValue}>{v}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* 주거환경 */}
+        <div style={S.section}>
+          <div style={S.sectionTitle}>👥 주거환경 (반경 500m)</div>
+          <div style={{...S.statGrid, marginBottom:'16px'}}>
+            {[['총 인구',d.population.total],['세대수',d.population.households],['남성',d.population.male],['여성',d.population.female]].map(([l,v])=>(
+              <div key={l} style={S.statCard}><div style={S.statNum}>{v}</div><div style={S.statLabel}>{l}</div></div>
+            ))}
+          </div>
+          <div style={{fontSize:'11px',color:'#888',marginBottom:'8px',fontWeight:'600'}}>연령대별 분포</div>
+          <BarChart data={d.population.age} />
+        </div>
+
+        {/* 교육환경 */}
+        <div style={S.section}>
+          <div style={S.sectionTitle}>🎓 교육환경 (반경 500m)</div>
+          <div style={{...S.statGrid4, marginBottom:'16px'}}>
+            {[['초등학교',d.education.elementary],['중학교',d.education.middle],['고등학교',d.education.high],['총 학원',Object.values(d.education.academies).reduce((a,b)=>a+b,0)]].map(([l,v])=>(
+              <div key={l} style={S.statCard}><div style={S.statNum}>{v}</div><div style={S.statLabel}>{l}</div></div>
+            ))}
+          </div>
+          <div style={{fontSize:'11px',color:'#888',marginBottom:'8px',fontWeight:'600'}}>과목별 학원</div>
+          {Object.entries(d.education.academies).map(([k,v])=>(
+            <div key={k} style={S.infoRow}>
+              <span style={S.infoLabel}>{k}</span>
+              <span style={S.infoValue}>{v}개</span>
+            </div>
+          ))}
+        </div>
+
+        {/* 생활편의 */}
+        <div style={S.section}>
+          <div style={S.sectionTitle}>🏪 생활편의 (반경 500m)</div>
+          <div style={S.statGrid}>
+            {[['어린이집',d.living.daycare],['유치원',d.living.kindergarten],['도서관',d.living.library],['병원',d.living.hospital],['약국',d.living.pharmacy],['카페',d.living.cafe],['편의점',d.living.convenience]].map(([l,v])=>(
+              <div key={l} style={S.statCard}><div style={S.statNum}>{v}</div><div style={S.statLabel}>{l}</div></div>
+            ))}
+          </div>
+        </div>
+
+      </div>
+    </div>
+  )
+}
