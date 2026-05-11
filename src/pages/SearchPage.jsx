@@ -19,6 +19,7 @@ const S = {
 
 export default function SearchPage({ onSearch }) {
   const [address, setAddress] = useState('')
+  const [jibunData, setJibunData] = useState(null)
   const [detail, setDetail] = useState('')
   const [client, setClient] = useState('')
   const [site, setSite] = useState('')
@@ -26,60 +27,49 @@ export default function SearchPage({ onSearch }) {
   const openAddr = () => {
     new window.daum.Postcode({
       oncomplete: (data) => {
-        setAddress(data.roadAddress || data.jibunAddress)
+        const addr = data.roadAddress || data.jibunAddress
+        setAddress(addr)
+        // 다음 주소검색에서 지번 정보 직접 추출
+        setJibunData({
+          siDo: data.sido,
+          siGunGu: data.sigungu,
+          eupmyundong: data.bname,
+          bun: data.bnum ? data.bnum.split('-')[0] || '0' : '0',
+          ji: data.bnum ? data.bnum.split('-')[1] || '0' : '0',
+          jibunAddress: data.jibunAddress,
+          roadAddress: data.roadAddress,
+        })
       },
-      onclose: () => {},
     }).open()
   }
-
-  const canSubmit = !!address
 
   return (
     <div style={S.wrap}>
       <div style={S.logo}>AGIO DESIGN</div>
       <div style={S.title}>상권 분석 리서치</div>
       <div style={S.sub}>주소를 입력하면 건물정보·인구·교육환경을 한번에 분석해드립니다</div>
-
       <div style={S.card}>
         <span style={S.label}>조사 주소</span>
         <div style={S.addrRow}>
           <input style={S.addrInput} value={address} readOnly placeholder="주소 검색 버튼을 눌러주세요" />
           <button style={S.addrBtn} onClick={openAddr}>주소 검색</button>
         </div>
-        <input
-          style={S.input}
-          value={detail}
-          onChange={e => setDetail(e.target.value)}
-          placeholder="상세주소 (호실, 층수 등)"
-        />
-
+        <input style={S.input} value={detail} onChange={e=>setDetail(e.target.value)} placeholder="상세주소 (호실, 층수 등)" />
         <div style={S.divider} />
-
         <div style={S.row2}>
           <div>
             <span style={S.label}>고객명</span>
-            <input
-              style={{...S.input, marginBottom:0}}
-              value={client}
-              onChange={e => setClient(e.target.value)}
-              placeholder="예: 홍길동"
-            />
+            <input style={{...S.input, marginBottom:0}} value={client} onChange={e=>setClient(e.target.value)} placeholder="예: 홍길동" />
           </div>
           <div>
             <span style={S.label}>현장명</span>
-            <input
-              style={{...S.input, marginBottom:0}}
-              value={site}
-              onChange={e => setSite(e.target.value)}
-              placeholder="예: 강남 카페"
-            />
+            <input style={{...S.input, marginBottom:0}} value={site} onChange={e=>setSite(e.target.value)} placeholder="예: 강남 카페" />
           </div>
         </div>
-
         <button
-          style={canSubmit ? S.submitBtn : S.submitBtnOff}
-          onClick={() => canSubmit && onSearch({ address, detail, client, site })}
-          disabled={!canSubmit}
+          style={address ? S.submitBtn : S.submitBtnOff}
+          onClick={() => address && onSearch({ address, detail, client, site, jibunData })}
+          disabled={!address}
         >
           분석 시작 →
         </button>
