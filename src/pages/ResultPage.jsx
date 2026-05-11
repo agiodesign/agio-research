@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { getJibunAddress, getBuildingInfo, getFloorInfo } from '../api/building'
+import { getBuildingInfo, getFloorInfo } from '../api/building'
 
 const S = {
   wrap: { minHeight:'100vh', background:'#f5f5f3' },
@@ -22,10 +22,9 @@ const S = {
   statLabel: { fontSize:'11px', color:'#888', marginTop:'4px' },
   loading: { display:'flex', alignItems:'center', justifyContent:'center', minHeight:'200px', fontSize:'14px', color:'#888' },
   error: { background:'#fff0f0', border:'1px solid #ffcccc', borderRadius:'10px', padding:'14px', fontSize:'13px', color:'#cc0000' },
-  note: { background:'#fffbf0', border:'1px solid #ffe4a0', borderRadius:'10px', padding:'12px 14px', fontSize:'12px', color:'#a07000' },
-  floorTable: { width:'100%', borderCollapse:'collapse', fontSize:'13px' },
+  note: { background:'#fffbf0', border:'1px solid #ffe4a0', borderRadius:'10px', padding:'12px 14px', fontSize:'12px', color:'#a07000', marginBottom:'14px' },
   th: { textAlign:'left', padding:'8px', background:'#f8f8f7', fontSize:'11px', color:'#888', fontWeight:'600' },
-  td: { padding:'8px', borderBottom:'1px solid #f5f5f5' },
+  td: { padding:'8px', borderBottom:'1px solid #f5f5f5', fontSize:'13px' },
 }
 
 const DUMMY_POP = {
@@ -75,7 +74,7 @@ export default function ResultPage({ data, onBack }) {
     async function load() {
       try {
         setLoadingB(true)
-        const jibun = await getJibunAddress(data.address)
+        const jibun = data.jibunData
         const [bInfo, fInfo] = await Promise.all([
           getBuildingInfo(jibun),
           getFloorInfo(jibun),
@@ -89,7 +88,7 @@ export default function ResultPage({ data, onBack }) {
       }
     }
     load()
-  }, [data.address])
+  }, [])
 
   const totalAcademy = Object.values(DUMMY_EDU.academies).reduce((a,b)=>a+b,0)
 
@@ -113,7 +112,7 @@ export default function ResultPage({ data, onBack }) {
             <div style={S.loading}>건축물대장 조회 중...</div>
           ) : errorB ? (
             <div style={S.error}>⚠️ {errorB}</div>
-          ) : building ? (
+          ) : building && (
             <>
               <InfoRow label="건물 용도" value={building.purpose} badge />
               <InfoRow label="연면적" value={building.area} />
@@ -123,7 +122,7 @@ export default function ResultPage({ data, onBack }) {
               <InfoRow label="건폐율" value={building.bcRat} />
               <InfoRow label="주차" value={building.parking} />
             </>
-          ) : null}
+          )}
         </div>
 
         <div style={S.section}>
@@ -131,7 +130,7 @@ export default function ResultPage({ data, onBack }) {
           {loadingB ? (
             <div style={S.loading}>조회 중...</div>
           ) : floors.length > 0 ? (
-            <table style={S.floorTable}>
+            <table style={{width:'100%', borderCollapse:'collapse'}}>
               <thead>
                 <tr>
                   <th style={S.th}>층</th>
@@ -156,7 +155,7 @@ export default function ResultPage({ data, onBack }) {
 
         <div style={S.section}>
           <div style={S.sectionTitle}>👥 주거환경 (반경 500m)</div>
-          <div style={{...S.note, marginBottom:'14px'}}>📌 인구 데이터 API 연동 예정</div>
+          <div style={S.note}>📌 인구 데이터 API 연동 예정</div>
           <div style={{...S.grid2, marginBottom:'16px'}}>
             <StatCard label="총 인구" value={DUMMY_POP.total} />
             <StatCard label="세대수" value={DUMMY_POP.households} />
@@ -169,7 +168,7 @@ export default function ResultPage({ data, onBack }) {
 
         <div style={S.section}>
           <div style={S.sectionTitle}>🎓 교육환경 (반경 500m)</div>
-          <div style={{...S.note, marginBottom:'14px'}}>📌 학원 데이터 API 연동 예정</div>
+          <div style={S.note}>📌 학원 데이터 API 연동 예정</div>
           <div style={{...S.grid4, marginBottom:'16px'}}>
             <StatCard label="초등학교" value={DUMMY_EDU.elementary} />
             <StatCard label="중학교" value={DUMMY_EDU.middle} />
@@ -184,7 +183,7 @@ export default function ResultPage({ data, onBack }) {
 
         <div style={{...S.section, ...S.full}}>
           <div style={S.sectionTitle}>🏪 생활편의 (반경 500m)</div>
-          <div style={{...S.note, marginBottom:'14px'}}>📌 소상공인 상권정보 API 연동 예정</div>
+          <div style={S.note}>📌 소상공인 상권정보 API 연동 예정</div>
           <div style={S.grid4}>
             <StatCard label="어린이집" value={DUMMY_LIVE.daycare} />
             <StatCard label="유치원" value={DUMMY_LIVE.kindergarten} />
