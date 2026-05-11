@@ -18,7 +18,6 @@ export async function getBuildingInfo(jibun) {
     built: item.useAprDay ? `${item.useAprDay.substring(0,4)}년 (${new Date().getFullYear() - parseInt(item.useAprDay.substring(0,4))}년)` : '-',
     structure: item.strctCdNm || '-',
     bcRat: item.bcRat ? `${item.bcRat}%` : '-',
-    totArea: item.totArea ? `${parseFloat(item.totArea).toLocaleString()}㎡` : '-',
     parking: item.oudrAutoUtcnt ? `실외 ${item.oudrAutoUtcnt}대` : (item.indrAutoUtcnt ? `실내 ${item.indrAutoUtcnt}대` : '-'),
   }
 }
