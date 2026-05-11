@@ -1,18 +1,13 @@
-const BUILDING_API_KEY = 'mX7nd4kSo5SUrlBEp4FVl2NqZIORFTqKdRXaY2Z2dGwTMIGpEkWDOlwl2YhJHZMx1ED5HpzMDBj4PFY05iA9vQ=='
-
 export async function getBuildingInfo(jibun) {
   const params = new URLSearchParams({
-    serviceKey: BUILDING_API_KEY,
+    type: 'title',
     siDo: jibun.siDo,
     siGunGu: jibun.siGunGu,
     eupmyundong: jibun.eupmyundong,
-    bun: String(jibun.bun).padStart(4, '0'),
-    ji: String(jibun.ji).padStart(4, '0'),
-    pageNo: '1',
-    numOfRows: '10',
-    _type: 'json',
+    bun: jibun.bun,
+    ji: jibun.ji,
   })
-  const res = await fetch(`https://apis.data.go.kr/1613000/BldRgstHubService/getBrTitleInfo?${params}`)
+  const res = await fetch(`/api/building?${params}`)
   const data = await res.json()
   const items = data?.response?.body?.items?.item
   if (!items) throw new Error('건축물대장 정보를 찾을 수 없습니다')
@@ -30,17 +25,14 @@ export async function getBuildingInfo(jibun) {
 
 export async function getFloorInfo(jibun) {
   const params = new URLSearchParams({
-    serviceKey: BUILDING_API_KEY,
+    type: 'floor',
     siDo: jibun.siDo,
     siGunGu: jibun.siGunGu,
     eupmyundong: jibun.eupmyundong,
-    bun: String(jibun.bun).padStart(4, '0'),
-    ji: String(jibun.ji).padStart(4, '0'),
-    pageNo: '1',
-    numOfRows: '100',
-    _type: 'json',
+    bun: jibun.bun,
+    ji: jibun.ji,
   })
-  const res = await fetch(`https://apis.data.go.kr/1613000/BldRgstHubService/getBrFlrOulnInfo?${params}`)
+  const res = await fetch(`/api/building?${params}`)
   const data = await res.json()
   const items = data?.response?.body?.items?.item
   if (!items) return []
