@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { getBuildingInfo, getFloorInfo } from '../api/building'
+import { getBuildingInfo, getFloorInfo, getUnitInfo } from '../api/building'
 
 const S = {
   wrap: { minHeight:'100vh', background:'#f5f5f3' },
@@ -14,17 +14,23 @@ const S = {
   infoRow: { display:'flex', justifyContent:'space-between', alignItems:'center', padding:'8px 0', borderBottom:'1px solid #fafafa' },
   infoLabel: { fontSize:'13px', color:'#666' },
   infoValue: { fontSize:'13px', fontWeight:'600', color:'#1a1a1a' },
-  badge: { display:'inline-block', padding:'3px 10px', borderRadius:'20px', fontSize:'12px', fontWeight:'600', background:'#e8f4ff', color:'#1a6fc4' },
+  badge1: { display:'inline-block', padding:'3px 10px', borderRadius:'20px', fontSize:'12px', fontWeight:'700', background:'#eff6ff', color:'#2563eb' },
+  badge2: { display:'inline-block', padding:'3px 10px', borderRadius:'20px', fontSize:'12px', fontWeight:'700', background:'#f0fdf4', color:'#16a34a' },
+  badgeN: { display:'inline-block', padding:'3px 10px', borderRadius:'20px', fontSize:'12px', fontWeight:'600', background:'#f5f5f5', color:'#555' },
   grid2: { display:'grid', gridTemplateColumns:'1fr 1fr', gap:'10px' },
   grid4: { display:'grid', gridTemplateColumns:'1fr 1fr 1fr 1fr', gap:'10px' },
   statCard: { background:'#f8f8f7', borderRadius:'10px', padding:'14px', textAlign:'center' },
   statNum: { fontSize:'20px', fontWeight:'700', color:'#1a1a1a' },
   statLabel: { fontSize:'11px', color:'#888', marginTop:'4px' },
-  loading: { display:'flex', alignItems:'center', justifyContent:'center', minHeight:'200px', fontSize:'14px', color:'#888' },
+  loading: { display:'flex', alignItems:'center', justifyContent:'center', minHeight:'160px', fontSize:'14px', color:'#888' },
   error: { background:'#fff0f0', border:'1px solid #ffcccc', borderRadius:'10px', padding:'14px', fontSize:'13px', color:'#cc0000' },
   note: { background:'#fffbf0', border:'1px solid #ffe4a0', borderRadius:'10px', padding:'12px 14px', fontSize:'12px', color:'#a07000', marginBottom:'14px' },
-  th: { textAlign:'left', padding:'8px', background:'#f8f8f7', fontSize:'11px', color:'#888', fontWeight:'600' },
-  td: { padding:'8px', borderBottom:'1px solid #f5f5f5', fontSize:'13px' },
+  th: { textAlign:'left', padding:'8px 10px', background:'#f8f8f7', fontSize:'11px', color:'#888', fontWeight:'600' },
+  td: { padding:'8px 10px', borderBottom:'1px solid #f5f5f5', fontSize:'13px' },
+  unitCard: { background:'#f0fdf4', border:'2px solid #16a34a', borderRadius:'14px', padding:'20px', marginBottom:'16px' },
+  unitTitle: { fontSize:'11px', fontWeight:'700', color:'#16a34a', letterSpacing:'0.1em', marginBottom:'12px' },
+  unitNum: { fontSize:'32px', fontWeight:'800', color:'#1a1a1a', marginBottom:'4px' },
+  unitSub: { fontSize:'13px', color:'#666' },
 }
 
 const DUMMY_POP = {
@@ -33,6 +39,11 @@ const DUMMY_POP = {
 }
 const DUMMY_EDU = { elementary:2, middle:1, high:1, academies:{국어:8,영어:15,수학:14,과학:6,예체능:20,기타:12} }
 const DUMMY_LIVE = { daycare:8, kindergarten:5, library:2, hospital:23, pharmacy:9, cafe:31, convenience:12 }
+
+function PurposeBadge({ purpose }) {
+  const style = purpose.includes('1종') ? S.badge1 : purpose.includes('2종') ? S.badge2 : S.badgeN
+  return <span style={style}>{purpose}</span>
+}
 
 function Bar({ data }) {
   const max = Math.max(...data.map(d => d.value))
@@ -55,11 +66,11 @@ function StatCard({ label, value }) {
   return <div style={S.statCard}><div style={S.statNum}>{value}</div><div style={S.statLabel}>{label}</div></div>
 }
 
-function InfoRow({ label, value, badge }) {
+function InfoRow({ label, value, purpose }) {
   return (
     <div style={S.infoRow}>
       <span style={S.infoLabel}>{label}</span>
-      <span style={badge ? S.badge : S.infoValue}>{value}</span>
+      {purpose ? <PurposeBadge purpose={value} /> : <span style={S.infoValue}>{value}</span>}
     </div>
   )
 }
@@ -67,37 +78,41 @@ function InfoRow({ label, value, badge }) {
 export default function ResultPage({ data, onBack }) {
   const [building, setBuilding] = useState(null)
   const [floors, setFloors] = useState([])
-  const [loadingB, setLoadingB] = useState(true)
-  const [errorB, setErrorB] = useState(null)
+  const [unit, setUnit] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
 
   useEffect(() => {
     async function load() {
       try {
-        setLoadingB(true)
+        setLoading(true)
         const jibun = data.jibunData
-        const [bInfo, fInfo] = await Promise.all([
-          getBuildingInfo(jibun),
-          getFloorInfo(jibun),
-        ])
+        const bInfo = await getBuildingInfo(jibun)
         setBuilding(bInfo)
-        setFloors(fInfo)
+        if (bInfo.isComplex) {
+          const uInfo = await getUnitInfo(jibun, data.hoNm || null)
+          setUnit(uInfo)
+        } else {
+          const fInfo = await getFloorInfo(jibun)
+          setFloors(fInfo)
+        }
       } catch (e) {
-        setErrorB(e.message)
+        setError(e.message)
       } finally {
-        setLoadingB(false)
+        setLoading(false)
       }
     }
     load()
   }, [])
 
-  const totalAcademy = Object.values(DUMMY_EDU.academies).reduce((a,b)=>a+b,0)
+  const totalAcademy = Object.values(DUMMY_EDU.academies).reduce((a,b) => a+b, 0)
 
   return (
     <div style={S.wrap}>
       <div style={S.header}>
         <button style={S.backBtn} onClick={onBack}>← 돌아가기</button>
         <div>
-          <div style={S.headerTitle}>{data.address} {data.detail}</div>
+          <div style={S.headerTitle}>{data.address} {data.hoNm && `${data.hoNm}호`} {data.detail}</div>
           <div style={S.headerSub}>
             {[data.client && `고객: ${data.client}`, data.site && `현장: ${data.site}`, '반경 500m 기준'].filter(Boolean).join(' · ')}
           </div>
@@ -108,50 +123,100 @@ export default function ResultPage({ data, onBack }) {
 
         <div style={S.section}>
           <div style={S.sectionTitle}>🏢 건물 정보 (건축물대장)</div>
-          {loadingB ? (
-            <div style={S.loading}>건축물대장 조회 중...</div>
-          ) : errorB ? (
-            <div style={S.error}>⚠️ {errorB}</div>
-          ) : building && (
+          {loading ? <div style={S.loading}>조회 중...</div>
+          : error ? <div style={S.error}>⚠️ {error}</div>
+          : building && (
             <>
-              <InfoRow label="건물 용도" value={building.purpose} badge />
+              <InfoRow label="건물 용도" value={building.purpose} purpose />
               <InfoRow label="연면적" value={building.area} />
               <InfoRow label="층수" value={building.floors} />
               <InfoRow label="준공연도" value={building.built} />
               <InfoRow label="구조" value={building.structure} />
               <InfoRow label="건폐율" value={building.bcRat} />
               <InfoRow label="주차" value={building.parking} />
+              {building.isComplex && (
+                <div style={{marginTop:'10px', padding:'8px 12px', background:'#eff6ff', borderRadius:'8px', fontSize:'12px', color:'#2563eb', fontWeight:'600'}}>
+                  🏬 집합건물 — 호실별 전용면적 조회 가능
+                </div>
+              )}
             </>
           )}
         </div>
 
         <div style={S.section}>
-          <div style={S.sectionTitle}>📐 층별 용도 및 면적</div>
-          {loadingB ? (
-            <div style={S.loading}>조회 중...</div>
-          ) : floors.length > 0 ? (
-            <table style={{width:'100%', borderCollapse:'collapse'}}>
-              <thead>
-                <tr>
-<th style={S.th}>층</th>
-<th style={S.th}>용도구분</th>
-<th style={S.th}>세부용도</th>
-<th style={{...S.th, textAlign:'right'}}>면적</th>
-                </tr>
-              </thead>
-<tbody>
-  {floors.map((f, i) => (
-    <tr key={i}>
-      <td style={S.td}>{f.floor}</td>
-      <td style={{...S.td, fontWeight:'600', color: f.purpose.includes('1종') ? '#2563eb' : f.purpose.includes('2종') ? '#16a34a' : '#1a1a1a'}}>{f.purpose}</td>
-      <td style={{...S.td, color:'#888'}}>{f.detailPurpose}</td>
-      <td style={{...S.td, textAlign:'right', fontWeight:'600'}}>{f.area}</td>
-    </tr>
-  ))}
-</tbody>
-            </table>
+          {building?.isComplex ? (
+            <>
+              <div style={S.sectionTitle}>🚪 호실 정보 (전유부)</div>
+              {loading ? <div style={S.loading}>조회 중...</div>
+              : unit ? (
+                Array.isArray(unit) ? (
+                  <>
+                    <div style={S.note}>호실을 입력하면 특정 호실만 조회됩니다</div>
+                    <table style={{width:'100%', borderCollapse:'collapse'}}>
+                      <thead>
+                        <tr>
+                          <th style={S.th}>호실</th>
+                          <th style={S.th}>층</th>
+                          <th style={S.th}>용도구분</th>
+                          <th style={{...S.th, textAlign:'right'}}>전용면적</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {unit.map((u, i) => (
+                          <tr key={i}>
+                            <td style={{...S.td, fontWeight:'700'}}>{u.hoNm}호</td>
+                            <td style={S.td}>{u.floor}</td>
+                            <td style={S.td}><PurposeBadge purpose={u.purpose} /></td>
+                            <td style={{...S.td, textAlign:'right', fontWeight:'600'}}>{u.area}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </>
+                ) : (
+                  <div style={S.unitCard}>
+                    <div style={S.unitTitle}>🚪 {unit.hoNm}호 ({unit.floor})</div>
+                    <div style={S.unitNum}>{unit.area}</div>
+                    <div style={S.unitSub}>전용면적</div>
+                    <div style={{marginTop:'12px'}}>
+                      <PurposeBadge purpose={unit.purpose} />
+                      <span style={{marginLeft:'8px', fontSize:'13px', color:'#666'}}>{unit.detailPurpose}</span>
+                    </div>
+                  </div>
+                )
+              ) : (
+                <div style={{fontSize:'13px', color:'#aaa'}}>호실 정보가 없습니다</div>
+              )}
+            </>
           ) : (
-            <div style={{fontSize:'13px', color:'#aaa'}}>층별 정보가 없습니다</div>
+            <>
+              <div style={S.sectionTitle}>📐 층별 용도 및 면적</div>
+              {loading ? <div style={S.loading}>조회 중...</div>
+              : floors.length > 0 ? (
+                <table style={{width:'100%', borderCollapse:'collapse'}}>
+                  <thead>
+                    <tr>
+                      <th style={S.th}>층</th>
+                      <th style={S.th}>용도구분</th>
+                      <th style={S.th}>세부용도</th>
+                      <th style={{...S.th, textAlign:'right'}}>면적</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {floors.map((f, i) => (
+                      <tr key={i}>
+                        <td style={S.td}>{f.floor}</td>
+                        <td style={S.td}><PurposeBadge purpose={f.purpose} /></td>
+                        <td style={{...S.td, color:'#888'}}>{f.detailPurpose}</td>
+                        <td style={{...S.td, textAlign:'right', fontWeight:'600'}}>{f.area}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              ) : (
+                <div style={{fontSize:'13px', color:'#aaa'}}>층별 정보가 없습니다</div>
+              )}
+            </>
           )}
         </div>
 
@@ -179,7 +244,10 @@ export default function ResultPage({ data, onBack }) {
           </div>
           <div style={{fontSize:'11px', color:'#888', marginBottom:'8px', fontWeight:'600'}}>과목별 학원</div>
           {Object.entries(DUMMY_EDU.academies).map(([k,v]) => (
-            <InfoRow key={k} label={k} value={`${v}개`} />
+            <div key={k} style={S.infoRow}>
+              <span style={S.infoLabel}>{k}</span>
+              <span style={S.infoValue}>{v}개</span>
+            </div>
           ))}
         </div>
 
