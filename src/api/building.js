@@ -1,25 +1,4 @@
 const BUILDING_API_KEY = 'mX7nd4kSo5SUrlBEp4FVl2NqZIORFTqKdRXaY2Z2dGwTMIGpEkWDOlwl2YhJHZMx1ED5HpzMDBj4PFY05iA9vQ=='
-const KAKAO_REST_KEY = '3d45e8959fb9d51bcc0db0ebaa9a2f51'
-
-export async function getJibunAddress(address) {
-  const res = await fetch(
-    `https://dapi.kakao.com/v2/local/search/address.json?query=${encodeURIComponent(address)}`,
-    { headers: { Authorization: `KakaoAK ${KAKAO_REST_KEY}` } }
-  )
-  const data = await res.json()
-  if (!data.documents || data.documents.length === 0) throw new Error('주소를 찾을 수 없습니다')
-  const doc = data.documents[0]
-  const addr = doc.address || doc.road_address
-  return {
-    siDo: addr.region_1depth_name,
-    siGunGu: addr.region_2depth_name,
-    eupmyundong: addr.region_3depth_name,
-    bun: addr.main_address_no || addr.main_building_no || '0',
-    ji: addr.sub_address_no || addr.sub_building_no || '0',
-    lat: parseFloat(doc.y),
-    lng: parseFloat(doc.x),
-  }
-}
 
 export async function getBuildingInfo(jibun) {
   const params = new URLSearchParams({
@@ -27,8 +6,8 @@ export async function getBuildingInfo(jibun) {
     siDo: jibun.siDo,
     siGunGu: jibun.siGunGu,
     eupmyundong: jibun.eupmyundong,
-    bun: jibun.bun.padStart(4, '0'),
-    ji: jibun.ji.padStart(4, '0'),
+    bun: String(jibun.bun).padStart(4, '0'),
+    ji: String(jibun.ji).padStart(4, '0'),
     pageNo: '1',
     numOfRows: '10',
     _type: 'json',
@@ -55,8 +34,8 @@ export async function getFloorInfo(jibun) {
     siDo: jibun.siDo,
     siGunGu: jibun.siGunGu,
     eupmyundong: jibun.eupmyundong,
-    bun: jibun.bun.padStart(4, '0'),
-    ji: jibun.ji.padStart(4, '0'),
+    bun: String(jibun.bun).padStart(4, '0'),
+    ji: String(jibun.ji).padStart(4, '0'),
     pageNo: '1',
     numOfRows: '100',
     _type: 'json',
