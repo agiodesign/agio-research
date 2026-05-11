@@ -26,20 +26,18 @@ export default function SearchPage({ onSearch }) {
 
   const openAddr = () => {
     new window.daum.Postcode({
-      oncomplete: (data) => {
-        const addr = data.roadAddress || data.jibunAddress
-        setAddress(addr)
-        // 다음 주소검색에서 지번 정보 직접 추출
-        setJibunData({
-          siDo: data.sido,
-          siGunGu: data.sigungu,
-          eupmyundong: data.bname,
-          bun: data.bnum ? data.bnum.split('-')[0] || '0' : '0',
-          ji: data.bnum ? data.bnum.split('-')[1] || '0' : '0',
-          jibunAddress: data.jibunAddress,
-          roadAddress: data.roadAddress,
-        })
-      },
+     oncomplete: (data) => {
+  console.log('다음 주소 데이터:', JSON.stringify(data))
+  const addr = data.roadAddress || data.jibunAddress
+  setAddress(addr)
+  setJibunData({
+    siDo: data.sido,
+    siGunGu: data.sigungu,
+    eupmyundong: data.bname,
+    bun: data.bnum ? data.bnum.split('-')[0] || '0' : '0',
+    ji: data.bnum ? data.bnum.split('-')[1] || '0' : '0',
+  })
+},
     }).open()
   }
 
