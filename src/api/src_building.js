@@ -1,9 +1,8 @@
 export async function getBuildingInfo(jibun) {
   const params = new URLSearchParams({
     type: 'title',
-    siDo: jibun.siDo,
-    siGunGu: jibun.siGunGu,
-    eupmyundong: jibun.eupmyundong,
+    sigunguCd: jibun.sigunguCd,
+    bjdongCd: jibun.bjdongCd,
     bun: jibun.bun,
     ji: jibun.ji,
   })
@@ -17,18 +16,18 @@ export async function getBuildingInfo(jibun) {
     area: item.totArea ? `${parseFloat(item.totArea).toLocaleString()}㎡` : '-',
     floors: `지상 ${item.grndFlrCnt || 0}층 / 지하 ${item.ugrndFlrCnt || 0}층`,
     built: item.useAprDay ? `${item.useAprDay.substring(0,4)}년 (${new Date().getFullYear() - parseInt(item.useAprDay.substring(0,4))}년)` : '-',
-    structure: item.mainStrctCdNm || '-',
+    structure: item.strctCdNm || '-',
     bcRat: item.bcRat ? `${item.bcRat}%` : '-',
-    parking: item.indrAutoUtcnt ? `실내 ${item.indrAutoUtcnt}대 / 실외 ${item.oudrAutoUtcnt||0}대` : '-',
+    totArea: item.totArea ? `${parseFloat(item.totArea).toLocaleString()}㎡` : '-',
+    parking: item.oudrAutoUtcnt ? `실외 ${item.oudrAutoUtcnt}대` : (item.indrAutoUtcnt ? `실내 ${item.indrAutoUtcnt}대` : '-'),
   }
 }
 
 export async function getFloorInfo(jibun) {
   const params = new URLSearchParams({
     type: 'floor',
-    siDo: jibun.siDo,
-    siGunGu: jibun.siGunGu,
-    eupmyundong: jibun.eupmyundong,
+    sigunguCd: jibun.sigunguCd,
+    bjdongCd: jibun.bjdongCd,
     bun: jibun.bun,
     ji: jibun.ji,
   })

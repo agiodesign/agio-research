@@ -2,14 +2,14 @@ const BUILDING_API_KEY = 'mX7nd4kSo5SUrlBEp4FVl2NqZIORFTqKdRXaY2Z2dGwTMIGpEkWDOl
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*')
-  res.setHeader('Access-Control-Allow-Methods', 'GET')
 
-  const { type, siDo, siGunGu, eupmyundong, bun, ji } = req.query
+  const { type, sigunguCd, bjdongCd, bun, ji } = req.query
   const endpoint = type === 'floor' ? 'getBrFlrOulnInfo' : 'getBrTitleInfo'
 
   const params = new URLSearchParams({
     serviceKey: BUILDING_API_KEY,
-    siDo, siGunGu, eupmyundong,
+    sigunguCd,
+    bjdongCd,
     bun: String(bun).padStart(4, '0'),
     ji: String(ji).padStart(4, '0'),
     pageNo: '1',

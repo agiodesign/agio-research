@@ -29,14 +29,20 @@ export default function SearchPage({ onSearch }) {
       oncomplete: (data) => {
         const addr = data.roadAddress || data.jibunAddress
         setAddress(addr)
+
+        // jibunAddress에서 번지 파싱
         const jibun = data.jibunAddress || ''
         const parts = jibun.trim().split(' ')
         const bunjiStr = parts[parts.length - 1] || '0'
         const bunjiArr = bunjiStr.split('-')
         const bun = bunjiArr[0] || '0'
         const ji = bunjiArr[1] || '0'
-        console.log('파싱결과:', { sido: data.sido, sigungu: data.sigungu, bname: data.bname, bun, ji })
-        setJibunData({ siDo: data.sido, siGunGu: data.sigungu, eupmyundong: data.bname, bun, ji })
+
+        // bcode는 11자리: 앞5자리=시군구, 5~10자리=법정동
+        const sigunguCd = data.sigunguCode || (data.bcode ? data.bcode.substring(0, 5) : '')
+        const bjdongCd = data.bcode ? data.bcode.substring(5, 10) : ''
+
+        setJibunData({ sigunguCd, bjdongCd, bun, ji })
       },
     }).open()
   }
