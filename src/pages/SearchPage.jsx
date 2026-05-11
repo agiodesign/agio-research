@@ -41,8 +41,8 @@ export default function SearchPage({ onSearch }) {
         // bcode는 11자리: 앞5자리=시군구, 5~10자리=법정동
         const sigunguCd = data.sigunguCode || (data.bcode ? data.bcode.substring(0, 5) : '')
         const bjdongCd = data.bcode ? data.bcode.substring(5, 10) : ''
-
-        setJibunData({ sigunguCd, bjdongCd, bun, ji })
+console.log('지번데이터:', { sigunguCd, bjdongCd, bun, ji })
+setJibunData({ sigunguCd, bjdongCd, bun, ji })
       },
     }).open()
   }
