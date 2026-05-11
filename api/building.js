@@ -1,6 +1,6 @@
 const BUILDING_API_KEY = 'mX7nd4kSo5SUrlBEp4FVl2NqZIORFTqKdRXaY2Z2dGwTMIGpEkWDOlwl2YhJHZMx1ED5HpzMDBj4PFY05iA9vQ=='
 
-module.exports = async function handler(req, res) {
+export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*')
   const { type, sigunguCd, bjdongCd, bun, ji } = req.query
   const endpoint = type === 'floor' ? 'getBrFlrOulnInfo' : 'getBrTitleInfo'
@@ -16,8 +16,8 @@ module.exports = async function handler(req, res) {
   })
   try {
     const response = await fetch(`https://apis.data.go.kr/1613000/BldRgstHubService/${endpoint}?${params}`)
-    const data = await response.json()
-    res.status(200).json(data)
+    const text = await response.text()
+    res.status(200).send(text)
   } catch (e) {
     res.status(500).json({ error: e.message })
   }
