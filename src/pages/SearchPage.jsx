@@ -33,22 +33,34 @@ export default function SearchPage({ onSearch }) {
 
   const openAddr = () => {
     new window.daum.Postcode({
-      oncomplete: (data) => {
-        const addr = data.roadAddress || data.jibunAddress
-        setAddress(addr)
-        setHoNm('')
-        const jibun = data.jibunAddress || ''
-        const parts = jibun.trim().split(' ')
-        const bunjiStr = parts[parts.length - 1] || '0'
-        const bunjiArr = bunjiStr.split('-')
-        const bun = bunjiArr[0] || '0'
-        const ji = bunjiArr[1] || '0'
-        const sigunguCd = data.sigunguCode || (data.bcode ? data.bcode.substring(0, 5) : '')
-        const bjdongCd = data.bcode ? data.bcode.substring(5, 10) : ''
-        setJibunData({ sigunguCd, bjdongCd, bun, ji, bcode: data.bcode })
-      },
-    }).open()
-  }
+oncomplete: async (data) => {
+  const addr = data.roadAddress || data.jibunAddress
+  setAddress(addr)
+  setHoNm('')
+  const jibun = data.jibunAddress || ''
+  const parts = jibun.trim().split(' ')
+  const bunjiStr = parts[parts.length - 1] || '0'
+  const bunjiArr = bunjiStr.split('-')
+  const bun = bunjiArr[0] || '0'
+  const ji = bunjiArr[1] || '0'
+  const sigunguCd = data.sigunguCode || (data.bcode ? data.bcode.substring(0, 5) : '')
+  const bjdongCd = data.bcode ? data.bcode.substring(5, 10) : ''
+
+  // 주소 → 좌표 변환
+  let coords = null
+  try {
+    coords = await new Promise((resolve) => {
+      const geocoder = new window.kakao.maps.services.Geocoder()
+      geocoder.addressSearch(addr, (result, status) => {
+        if (status === window.kakao.maps.services.Status.OK) {
+          resolve({ lat: parseFloat(result[0].y), lon: parseFloat(result[0].x) })
+        } else resolve(null)
+      })
+    })
+  } catch(e) {}
+
+  setJibunData({ sigunguCd, bjdongCd, bun, ji, bcode: data.bcode, coords })
+}
 
   return (
     <div style={S.wrap}>
