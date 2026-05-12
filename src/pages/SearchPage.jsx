@@ -40,7 +40,7 @@ export default function SearchPage({ onSearch }) {
         const ji = bunjiArr[1] || '0'
         const sigunguCd = data.sigunguCode || (data.bcode ? data.bcode.substring(0, 5) : '')
         const bjdongCd = data.bcode ? data.bcode.substring(5, 10) : ''
-        setJibunData({ sigunguCd, bjdongCd, bun, ji })
+setJibunData({ sigunguCd, bjdongCd, bun, ji, bcode: data.bcode })
       },
     }).open()
   }
