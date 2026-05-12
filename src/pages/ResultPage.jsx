@@ -7,7 +7,7 @@ const S = {
   backBtn: { padding:'8px 14px', background:'#f5f5f3', border:'none', borderRadius:'8px', fontSize:'13px', fontWeight:'600', cursor:'pointer', color:'#555' },
   headerTitle: { fontSize:'15px', fontWeight:'700', color:'#1a1a1a' },
   headerSub: { fontSize:'12px', color:'#888', marginTop:'2px' },
-  body: { maxWidth:'900px', margin:'0 auto', padding:'24px 20px', display:'grid', gridTemplateColumns:'1fr 1fr', gap:'16px' },
+  body: { maxWidth:'960px', margin:'0 auto', padding:'24px 20px', display:'grid', gridTemplateColumns:'1fr 1fr', gap:'16px' },
   full: { gridColumn:'1 / -1' },
   section: { background:'#fff', borderRadius:'14px', padding:'22px', boxShadow:'0 1px 8px rgba(0,0,0,0.05)' },
   sectionTitle: { fontSize:'11px', fontWeight:'700', letterSpacing:'0.1em', color:'#888', textTransform:'uppercase', marginBottom:'16px', paddingBottom:'8px', borderBottom:'1px solid #f0f0f0' },
@@ -22,15 +22,15 @@ const S = {
   statCard: { background:'#f8f8f7', borderRadius:'10px', padding:'14px', textAlign:'center' },
   statNum: { fontSize:'20px', fontWeight:'700', color:'#1a1a1a' },
   statLabel: { fontSize:'11px', color:'#888', marginTop:'4px' },
-  loading: { display:'flex', alignItems:'center', justifyContent:'center', minHeight:'160px', fontSize:'14px', color:'#888' },
+  loading: { display:'flex', alignItems:'center', justifyContent:'center', minHeight:'120px', fontSize:'14px', color:'#888' },
   error: { background:'#fff0f0', border:'1px solid #ffcccc', borderRadius:'10px', padding:'14px', fontSize:'13px', color:'#cc0000' },
   note: { background:'#fffbf0', border:'1px solid #ffe4a0', borderRadius:'10px', padding:'12px 14px', fontSize:'12px', color:'#a07000', marginBottom:'14px' },
   th: { textAlign:'left', padding:'8px 10px', background:'#f8f8f7', fontSize:'11px', color:'#888', fontWeight:'600' },
   td: { padding:'8px 10px', borderBottom:'1px solid #f5f5f5', fontSize:'13px' },
-  unitCard: { background:'#f0fdf4', border:'2px solid #16a34a', borderRadius:'14px', padding:'20px', marginBottom:'16px' },
-  unitTitle: { fontSize:'11px', fontWeight:'700', color:'#16a34a', letterSpacing:'0.1em', marginBottom:'12px' },
-  unitNum: { fontSize:'32px', fontWeight:'800', color:'#1a1a1a', marginBottom:'4px' },
-  unitSub: { fontSize:'13px', color:'#666' },
+  unitCard: { background:'#f0fdf4', border:'2px solid #16a34a', borderRadius:'12px', padding:'18px', marginBottom:'0', display:'flex', alignItems:'center', gap:'20px' },
+  unitLabel: { fontSize:'11px', fontWeight:'700', color:'#16a34a', letterSpacing:'0.08em', marginBottom:'4px' },
+  unitNum: { fontSize:'28px', fontWeight:'800', color:'#1a1a1a' },
+  unitSub: { fontSize:'12px', color:'#666', marginTop:'2px' },
 }
 
 const DUMMY_POP = {
@@ -80,6 +80,7 @@ export default function ResultPage({ data, onBack }) {
   const [floors, setFloors] = useState([])
   const [unit, setUnit] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [unitLoading, setUnitLoading] = useState(false)
   const [error, setError] = useState(null)
 
   useEffect(() => {
@@ -87,14 +88,17 @@ export default function ResultPage({ data, onBack }) {
       try {
         setLoading(true)
         const jibun = data.jibunData
-        const bInfo = await getBuildingInfo(jibun)
+        const [bInfo, fInfo] = await Promise.all([
+          getBuildingInfo(jibun),
+          getFloorInfo(jibun),
+        ])
         setBuilding(bInfo)
-        if (bInfo.isComplex) {
-          const uInfo = await getUnitInfo(jibun, data.hoNm || null)
+        setFloors(fInfo)
+        if (bInfo.isComplex && data.hoNm && data.hoNm.trim() !== '') {
+          setUnitLoading(true)
+          const uInfo = await getUnitInfo(jibun, data.hoNm.trim())
           setUnit(uInfo)
-        } else {
-          const fInfo = await getFloorInfo(jibun)
-          setFloors(fInfo)
+          setUnitLoading(false)
         }
       } catch (e) {
         setError(e.message)
@@ -112,7 +116,9 @@ export default function ResultPage({ data, onBack }) {
       <div style={S.header}>
         <button style={S.backBtn} onClick={onBack}>← 돌아가기</button>
         <div>
-          <div style={S.headerTitle}>{data.address} {data.hoNm && `${data.hoNm}호`} {data.detail}</div>
+          <div style={S.headerTitle}>
+            {data.address} {data.hoNm && `${data.hoNm}호`} {data.detail}
+          </div>
           <div style={S.headerSub}>
             {[data.client && `고객: ${data.client}`, data.site && `현장: ${data.site}`, '반경 500m 기준'].filter(Boolean).join(' · ')}
           </div>
@@ -120,6 +126,33 @@ export default function ResultPage({ data, onBack }) {
       </div>
 
       <div style={S.body}>
+
+        {building?.isComplex && data.hoNm && data.hoNm.trim() !== '' && (
+          <div style={S.full}>
+            {unitLoading ? (
+              <div style={{...S.section, display:'flex', alignItems:'center', padding:'18px'}}>
+                <div style={{fontSize:'14px', color:'#888'}}>호실 정보 조회 중...</div>
+              </div>
+            ) : unit ? (
+              <div style={S.unitCard}>
+                <div>
+                  <div style={S.unitLabel}>🚪 전유부 조회 결과</div>
+                  <div style={S.unitNum}>{unit.area}</div>
+                  <div style={S.unitSub}>전용면적 · {unit.floor}</div>
+                </div>
+                <div style={{borderLeft:'1px solid #bbf7d0', paddingLeft:'20px'}}>
+                  <div style={{marginBottom:'6px'}}><PurposeBadge purpose={unit.purpose} /></div>
+                  <div style={{fontSize:'13px', color:'#555'}}>{unit.detailPurpose}</div>
+                  <div style={{fontSize:'12px', color:'#888', marginTop:'4px'}}>{unit.hoNm}호</div>
+                </div>
+              </div>
+            ) : (
+              <div style={{padding:'14px', background:'#fff8f8', border:'1px solid #fecaca', borderRadius:'12px'}}>
+                <div style={{fontSize:'13px', color:'#cc0000'}}>⚠️ {data.hoNm}호 정보를 찾을 수 없습니다. 호실 번호를 확인해주세요.</div>
+              </div>
+            )}
+          </div>
+        )}
 
         <div style={S.section}>
           <div style={S.sectionTitle}>🏢 건물 정보 (건축물대장)</div>
@@ -136,7 +169,7 @@ export default function ResultPage({ data, onBack }) {
               <InfoRow label="주차" value={building.parking} />
               {building.isComplex && (
                 <div style={{marginTop:'10px', padding:'8px 12px', background:'#eff6ff', borderRadius:'8px', fontSize:'12px', color:'#2563eb', fontWeight:'600'}}>
-                  🏬 집합건물 — 호실별 전용면적 조회 가능
+                  🏬 집합건물 — 호실 입력시 전용면적 조회 가능
                 </div>
               )}
             </>
@@ -144,79 +177,31 @@ export default function ResultPage({ data, onBack }) {
         </div>
 
         <div style={S.section}>
-          {building?.isComplex ? (
-            <>
-              <div style={S.sectionTitle}>🚪 호실 정보 (전유부)</div>
-              {loading ? <div style={S.loading}>조회 중...</div>
-              : unit ? (
-                Array.isArray(unit) ? (
-                  <>
-                    <div style={S.note}>호실을 입력하면 특정 호실만 조회됩니다</div>
-                    <table style={{width:'100%', borderCollapse:'collapse'}}>
-                      <thead>
-                        <tr>
-                          <th style={S.th}>호실</th>
-                          <th style={S.th}>층</th>
-                          <th style={S.th}>용도구분</th>
-                          <th style={{...S.th, textAlign:'right'}}>전용면적</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {unit.map((u, i) => (
-                          <tr key={i}>
-                            <td style={{...S.td, fontWeight:'700'}}>{u.hoNm}호</td>
-                            <td style={S.td}>{u.floor}</td>
-                            <td style={S.td}><PurposeBadge purpose={u.purpose} /></td>
-                            <td style={{...S.td, textAlign:'right', fontWeight:'600'}}>{u.area}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </>
-                ) : (
-                  <div style={S.unitCard}>
-                    <div style={S.unitTitle}>🚪 {unit.hoNm}호 ({unit.floor})</div>
-                    <div style={S.unitNum}>{unit.area}</div>
-                    <div style={S.unitSub}>전용면적</div>
-                    <div style={{marginTop:'12px'}}>
-                      <PurposeBadge purpose={unit.purpose} />
-                      <span style={{marginLeft:'8px', fontSize:'13px', color:'#666'}}>{unit.detailPurpose}</span>
-                    </div>
-                  </div>
-                )
-              ) : (
-                <div style={{fontSize:'13px', color:'#aaa'}}>호실 정보가 없습니다</div>
-              )}
-            </>
+          <div style={S.sectionTitle}>📐 층별 용도 및 면적</div>
+          {loading ? <div style={S.loading}>조회 중...</div>
+          : floors.length > 0 ? (
+            <table style={{width:'100%', borderCollapse:'collapse'}}>
+              <thead>
+                <tr>
+                  <th style={S.th}>층</th>
+                  <th style={S.th}>용도구분</th>
+                  <th style={S.th}>세부용도</th>
+                  <th style={{...S.th, textAlign:'right'}}>면적</th>
+                </tr>
+              </thead>
+              <tbody>
+                {floors.map((f, i) => (
+                  <tr key={i}>
+                    <td style={S.td}>{f.floor}</td>
+                    <td style={S.td}><PurposeBadge purpose={f.purpose} /></td>
+                    <td style={{...S.td, color:'#888'}}>{f.detailPurpose}</td>
+                    <td style={{...S.td, textAlign:'right', fontWeight:'600'}}>{f.area}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           ) : (
-            <>
-              <div style={S.sectionTitle}>📐 층별 용도 및 면적</div>
-              {loading ? <div style={S.loading}>조회 중...</div>
-              : floors.length > 0 ? (
-                <table style={{width:'100%', borderCollapse:'collapse'}}>
-                  <thead>
-                    <tr>
-                      <th style={S.th}>층</th>
-                      <th style={S.th}>용도구분</th>
-                      <th style={S.th}>세부용도</th>
-                      <th style={{...S.th, textAlign:'right'}}>면적</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {floors.map((f, i) => (
-                      <tr key={i}>
-                        <td style={S.td}>{f.floor}</td>
-                        <td style={S.td}><PurposeBadge purpose={f.purpose} /></td>
-                        <td style={{...S.td, color:'#888'}}>{f.detailPurpose}</td>
-                        <td style={{...S.td, textAlign:'right', fontWeight:'600'}}>{f.area}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              ) : (
-                <div style={{fontSize:'13px', color:'#aaa'}}>층별 정보가 없습니다</div>
-              )}
-            </>
+            <div style={{fontSize:'13px', color:'#aaa'}}>층별 정보가 없습니다</div>
           )}
         </div>
 
