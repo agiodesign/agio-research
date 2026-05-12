@@ -2,7 +2,7 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*')
   const { divId, key } = req.query
   
-  const API_KEY = '소상공인_API_키_여기에_입력'
+const API_KEY = 'mX7nd4kSo5SUrlBEp4FVl2NqZIORFTqKdRXaY2Z2dGwTMIGpEkWDOlwl2YhJHZMx1ED5HpzMDBj4PFY05iA9vQ=='
   
   const params = new URLSearchParams({
     serviceKey: API_KEY,
