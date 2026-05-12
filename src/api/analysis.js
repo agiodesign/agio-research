@@ -1,14 +1,45 @@
  (cd "$(git rev-parse --show-toplevel)" && git apply --3way <<'EOF' 
 diff --git a/src/api/analysis.js b/src/api/analysis.js
-index a4d0b6b778a05e5c71227aa89a2c540641dd2d81..22213af661738fcf958bef968b7aa47555b5d554 100644
+index a4d0b6b778a05e5c71227aa89a2c540641dd2d81..6f5ef6c337941e18c80d62ea3aead3950a92d69e 100644
 --- a/src/api/analysis.js
 +++ b/src/api/analysis.js
-@@ -1,21 +1,95 @@
+@@ -1,21 +1,115 @@
 -import axios from 'axios';
 +const API_BASE = (import.meta.env.VITE_POPULATION_API_BASE || '/api/population').trim()
  
 -const API_KEY = process.env.REACT_APP_API_KEY; // 기존 키 사용
 -const BASE_URL = 'http://apis.data.go.kr/B553077/api/open/sdsc2';
++function normalizePayload(data) {
++  const root = data?.response || data || {}
++  const header = root?.header || {}
++  const body = root?.body || {}
++  const items = body?.items?.item
++
++  const normalizedItems = Array.isArray(items) ? items : items ? [items] : []
++  const totalCount = Number(body?.totalCount ?? normalizedItems.length ?? 0)
++
++  return {
++    header,
++    body: {
++      ...body,
++      totalCount: Number.isNaN(totalCount) ? 0 : totalCount,
++      items: normalizedItems,
++      isEmpty: normalizedItems.length === 0,
++    },
++  }
++}
++
++export function normalizeAreaCode(rawCode = '', divId = 'adongCd') {
++  const code = String(rawCode).replace(/\D/g, '')
++
++  if (divId === 'adongCd') return code.slice(0, 8)
++  if (divId === 'bjdongCd' || divId === 'ldongCd') return code.slice(0, 10)
++  if (divId === 'signguCd') return code.slice(0, 5)
++  if (divId === 'sidoCd') return code.slice(0, 2)
++
++  return code
++}
++
 +async function requestPopulationApi(params) {
 +  const query = new URLSearchParams(params)
 +  const response = await fetch(`${API_BASE}?${query}`)
@@ -25,49 +56,41 @@ index a4d0b6b778a05e5c71227aa89a2c540641dd2d81..22213af661738fcf958bef968b7aa475
 +    throw new Error(`JSON 파싱 실패: ${rawText.slice(0, 120)}`)
 +  }
 +
-+  const header = data?.header || data?.body?.header || data?.response?.header
-+  if (header?.resultCode && header.resultCode !== '00') {
-+    throw new Error(`상권 API 오류(${header.resultCode}): ${header.resultMsg || '알 수 없는 오류'}`)
++  const normalized = normalizePayload(data)
++
++  if (normalized.header?.resultCode && normalized.header.resultCode !== '00') {
++    throw new Error(`상권 API 오류(${normalized.header.resultCode}): ${normalized.header.resultMsg || '알 수 없는 오류'}`)
 +  }
 +
-+  return data?.response || data
-+}
-+
-+export function normalizeAreaCode(rawCode = '', divId = 'adongCd') {
-+  const code = String(rawCode).replace(/\D/g, '')
-+  if (divId === 'signguCd') return code.slice(0, 5)
-+  if (divId === 'sidoCd') return code.slice(0, 2)
-+  return code.slice(0, 8)
++  return normalized
 +}
 +
 +export function calcStoreDensity({ totalCount = 0, areaSqm = 0 }) {
 +  if (!areaSqm || areaSqm <= 0) {
-+    return { totalCount, densityPerSqKm: null }
++    return { totalCount: Number(totalCount) || 0, densityPerSqKm: null }
 +  }
 +
 +  const areaSqKm = areaSqm / 1_000_000
 +  return {
-+    totalCount,
-+    densityPerSqKm: Number((totalCount / areaSqKm).toFixed(2)),
++    totalCount: Number(totalCount) || 0,
++    densityPerSqKm: Number(((Number(totalCount) || 0) / areaSqKm).toFixed(2)),
 +  }
 +}
 +
-+export async function getStoresInDong({ divId = 'adongCd', key, indsLclsCd, indsMclsCd, indsSclsCd, rows = 20 }) {
-+  const data = await requestPopulationApi({
++export async function getStoresInDong({ divId = 'adongCd', key, indsLclsCd = 'I2', indsMclsCd, indsSclsCd, rows = 20 }) {
++  return requestPopulationApi({
 +    operation: 'storeListInDong',
 +    divId,
 +    key,
 +    rows,
-+    ...(indsLclsCd ? { indsLclsCd } : {}),
++    indsLclsCd,
 +    ...(indsMclsCd ? { indsMclsCd } : {}),
 +    ...(indsSclsCd ? { indsSclsCd } : {}),
 +  })
-+
-+  return data?.body || data
 +}
 +
 +export async function getStoresInBuilding({ key, indsLclsCd, indsMclsCd, indsSclsCd, rows = 100 }) {
-+  const data = await requestPopulationApi({
++  return requestPopulationApi({
 +    operation: 'storeListInBuilding',
 +    key,
 +    rows,
@@ -75,12 +98,10 @@ index a4d0b6b778a05e5c71227aa89a2c540641dd2d81..22213af661738fcf958bef968b7aa475
 +    ...(indsMclsCd ? { indsMclsCd } : {}),
 +    ...(indsSclsCd ? { indsSclsCd } : {}),
 +  })
-+
-+  return data?.body || data
 +}
 +
 +export async function getStoresInRadius({ radius, cx, cy, indsLclsCd, indsMclsCd, indsSclsCd, rows = 100 }) {
-+  const data = await requestPopulationApi({
++  return requestPopulationApi({
 +    operation: 'storeListInRadius',
 +    radius,
 +    cx,
@@ -90,8 +111,6 @@ index a4d0b6b778a05e5c71227aa89a2c540641dd2d81..22213af661738fcf958bef968b7aa475
 +    ...(indsMclsCd ? { indsMclsCd } : {}),
 +    ...(indsSclsCd ? { indsSclsCd } : {}),
 +  })
-+
-+  return data?.body || data
 +}
  
 -/**
@@ -105,7 +124,8 @@ index a4d0b6b778a05e5c71227aa89a2c540641dd2d81..22213af661738fcf958bef968b7aa475
 -    const response = await fetch(`/api/population?${params}`)
 -    const data = await response.json()
 -    return data?.body
-+    return await getStoresInDong({ divId, key })
++    const normalizedKey = normalizeAreaCode(key, divId)
++    return await getStoresInDong({ divId, key: normalizedKey })
    } catch (error) {
 -    console.error("인구 분석 데이터 로드 실패:", error)
 +    console.error('인구 분석 데이터 로드 실패:', error)
