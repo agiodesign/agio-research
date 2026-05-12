@@ -1,11 +1,12 @@
-export const getPopulationStatus = async (divId, key) => {
+export const getStoreList = async (bcode) => {
   try {
-    const params = new URLSearchParams({ divId, key })
+    const signguCd = bcode.substring(0, 5)
+    const ldongCd = bcode
+    const params = new URLSearchParams({ signguCd, ldongCd })
     const response = await fetch(`/api/population?${params}`)
-    const data = await response.json()
-    return data?.body
+    return await response.json()
   } catch (error) {
-    console.error("인구 분석 데이터 로드 실패:", error)
+    console.error('상가 데이터 로드 실패:', error)
     return null
   }
 }
