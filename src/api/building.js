@@ -20,8 +20,8 @@ async function fetchAPI(type, jibun) {
     ji: jibun.ji,
   })
   const res = await fetch(`/api/building?${params}`)
-  // 응답이 JSON인지 확인하는 안전장치
   const contentType = res.headers.get("content-type");
+  
   if (contentType && contentType.indexOf("application/json") !== -1) {
     return await res.json();
   } else {
@@ -30,6 +30,7 @@ async function fetchAPI(type, jibun) {
   }
 }
 
+// 1. 건축물 기본 정보 조회
 export async function getBuildingInfo(jibun) {
   const data = await fetchAPI('title', jibun)
   const items = data?.response?.body?.items?.item
@@ -44,24 +45,44 @@ export async function getBuildingInfo(jibun) {
     structure: item.strctCdNm || '-',
     bcRat: item.bcRat ? `${item.bcRat}%` : '-',
     parking: `실내 ${item.indrAutoUtcnt || 0}대 / 실외 ${item.oudrAutoUtcnt || 0}대`,
-    // 집합건물 구분 키를 더 유연하게 체크 (regstrGbCd 또는 regstrKindCd)
-    isComplex: item.regstrGbCd === '2' || item.regstrKindCd === '2',
+    isComplex: item.regstrGbCd === '2' || item.regstrKindCd === '2' || item.regstrKindCd === '4',
   }
 }
 
+// 2. 층별 정보 조회 (누락되었던 부분)
+export async function getFloorInfo(jibun) {
+  const data = await fetchAPI('floor', jibun)
+  const items = data?.response?.body?.items?.item || data?.items
+  if (!items) return []
+  
+  const arr = Array.isArray(items) ? items : [items]
+  const floorOrder = ['지하2층','지하1층','1층','2층','3층','4층','5층','6층','7층','8층','9층','10층','11층','12층','13층','14층','15층']
+  
+  return arr
+    .map(f => ({
+      floor: f.flrNoNm || f.flrNm || '-',
+      purpose: getPurpose(f.mainPurpsCd),
+      detailPurpose: f.mainPurpsCdNm || f.etcPurps || '-',
+      area: f.area ? `${parseFloat(f.area).toLocaleString()}㎡` : '-',
+    }))
+    .sort((a, b) => {
+      const ai = floorOrder.indexOf(a.floor)
+      const bi = floorOrder.indexOf(b.floor)
+      return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi)
+    })
+}
+
+// 3. 호실(전유부) 정보 조회 (검색 로직 강화)
 export async function getUnitInfo(jibun, hoNm) {
   const data = await fetchAPI('unit', jibun)
-  // 전유부 API 응답 구조가 items.item 아래에 있는지, 아니면 직계에 있는지 체크
   const rawItems = data?.items || data?.response?.body?.items?.item
   if (!rawItems) return null
   
   const arr = Array.isArray(rawItems) ? rawItems : [rawItems]
-  
-  // 1. 필터링 완화: exposPubuseGbCd 체크를 제거하거나 유연하게 변경
-  // (집합건물인데 전유부 코드값이 안 넘어오는 경우가 많음)
-  const units = arr; 
+  const searchHo = hoNm.replace(/[^0-9]/g, '');
 
-  if (!hoNm) return units.map(u => ({
+  // 입력된 호수가 있으면 특정 호수만 찾고, 없으면 전체 반환
+  if (!hoNm) return arr.map(u => ({
     hoNm: u.hoNm,
     floor: u.flrNoNm || u.flrNm,
     purpose: getPurpose(u.mainPurpsCd),
@@ -69,9 +90,7 @@ export async function getUnitInfo(jibun, hoNm) {
     area: u.area ? `${parseFloat(u.area).toLocaleString()}㎡` : '-',
   }))
 
-  // 2. 호수 검색 강화: "101", "101호", "0101" 모두 대응 가능하도록 숫자만 추출해서 비교
-  const searchHo = hoNm.replace(/[^0-9]/g, '');
-  const unit = units.find(u => {
+  const unit = arr.find(u => {
     const targetHo = String(u.hoNm).replace(/[^0-9]/g, '');
     return targetHo === searchHo || String(u.hoNm).includes(hoNm);
   })
