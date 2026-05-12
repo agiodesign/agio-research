@@ -1,55 +1,115 @@
  (cd "$(git rev-parse --show-toplevel)" && git apply --3way <<'EOF' 
-diff --git a/api/population.js b/api/population.js
-index d0ec5743596f345cc154485282b4fee930c05e8c..ebba10b3c9c7b96cd5079546bd12b32a7eb2ce1a 100644
---- a/api/population.js
-+++ b/api/population.js
-@@ -1,21 +1,39 @@
- export default async function handler(req, res) {
-   res.setHeader('Access-Control-Allow-Origin', '*')
--  const { divId, key } = req.query
-+  const {
-+    operation = 'storeListInDong',
+diff --git a/src/api/analysis.js b/src/api/analysis.js
+index a4d0b6b778a05e5c71227aa89a2c540641dd2d81..22213af661738fcf958bef968b7aa47555b5d554 100644
+--- a/src/api/analysis.js
++++ b/src/api/analysis.js
+@@ -1,21 +1,95 @@
+-import axios from 'axios';
++const API_BASE = (import.meta.env.VITE_POPULATION_API_BASE || '/api/population').trim()
+ 
+-const API_KEY = process.env.REACT_APP_API_KEY; // 기존 키 사용
+-const BASE_URL = 'http://apis.data.go.kr/B553077/api/open/sdsc2';
++async function requestPopulationApi(params) {
++  const query = new URLSearchParams(params)
++  const response = await fetch(`${API_BASE}?${query}`)
++  const rawText = await response.text()
++
++  if (!response.ok) {
++    throw new Error(`API 요청 실패(${response.status}): ${rawText || response.statusText}`)
++  }
++
++  let data
++  try {
++    data = JSON.parse(rawText)
++  } catch {
++    throw new Error(`JSON 파싱 실패: ${rawText.slice(0, 120)}`)
++  }
++
++  const header = data?.header || data?.body?.header || data?.response?.header
++  if (header?.resultCode && header.resultCode !== '00') {
++    throw new Error(`상권 API 오류(${header.resultCode}): ${header.resultMsg || '알 수 없는 오류'}`)
++  }
++
++  return data?.response || data
++}
++
++export function normalizeAreaCode(rawCode = '', divId = 'adongCd') {
++  const code = String(rawCode).replace(/\D/g, '')
++  if (divId === 'signguCd') return code.slice(0, 5)
++  if (divId === 'sidoCd') return code.slice(0, 2)
++  return code.slice(0, 8)
++}
++
++export function calcStoreDensity({ totalCount = 0, areaSqm = 0 }) {
++  if (!areaSqm || areaSqm <= 0) {
++    return { totalCount, densityPerSqKm: null }
++  }
++
++  const areaSqKm = areaSqm / 1_000_000
++  return {
++    totalCount,
++    densityPerSqKm: Number((totalCount / areaSqKm).toFixed(2)),
++  }
++}
++
++export async function getStoresInDong({ divId = 'adongCd', key, indsLclsCd, indsMclsCd, indsSclsCd, rows = 20 }) {
++  const data = await requestPopulationApi({
++    operation: 'storeListInDong',
 +    divId,
 +    key,
++    rows,
++    ...(indsLclsCd ? { indsLclsCd } : {}),
++    ...(indsMclsCd ? { indsMclsCd } : {}),
++    ...(indsSclsCd ? { indsSclsCd } : {}),
++  })
++
++  return data?.body || data
++}
++
++export async function getStoresInBuilding({ key, indsLclsCd, indsMclsCd, indsSclsCd, rows = 100 }) {
++  const data = await requestPopulationApi({
++    operation: 'storeListInBuilding',
++    key,
++    rows,
++    ...(indsLclsCd ? { indsLclsCd } : {}),
++    ...(indsMclsCd ? { indsMclsCd } : {}),
++    ...(indsSclsCd ? { indsSclsCd } : {}),
++  })
++
++  return data?.body || data
++}
++
++export async function getStoresInRadius({ radius, cx, cy, indsLclsCd, indsMclsCd, indsSclsCd, rows = 100 }) {
++  const data = await requestPopulationApi({
++    operation: 'storeListInRadius',
 +    radius,
 +    cx,
 +    cy,
-+    indsLclsCd,
-+    indsMclsCd,
-+    indsSclsCd,
-+    rows = '20',
-+  } = req.query
-   
- const API_KEY = 'mX7nd4kSo5SUrlBEp4FVl2NqZIORFTqKdRXaY2Z2dGwTMIGpEkWDOlwl2YhJHZMx1ED5HpzMDBj4PFY05iA9vQ=='
-   
--  const params = new URLSearchParams({
--    serviceKey: API_KEY,
--    type: 'json',
--    divId,
--    key,
--  })
-+  const params = new URLSearchParams({ serviceKey: API_KEY, type: 'json', numOfRows: rows })
-+  if (divId) params.set('divId', divId)
-+  if (key) params.set('key', key)
-+  if (radius) params.set('radius', radius)
-+  if (cx) params.set('cx', cx)
-+  if (cy) params.set('cy', cy)
++    rows,
++    ...(indsLclsCd ? { indsLclsCd } : {}),
++    ...(indsMclsCd ? { indsMclsCd } : {}),
++    ...(indsSclsCd ? { indsSclsCd } : {}),
++  })
 +
-+  if (indsLclsCd) params.set('indsLclsCd', indsLclsCd)
-+  if (indsMclsCd) params.set('indsMclsCd', indsMclsCd)
-+  if (indsSclsCd) params.set('indsSclsCd', indsSclsCd)
-   
++  return data?.body || data
++}
+ 
+-/**
+- * 소상공인 상권정보 - 인구 현황 조회
+- * @param {string} divId - 구분ID (adongCd: 행정동, bjdongCd: 법정동 등)
+- * @param {string} key - 행정동/법정동 코드
+- */
+ export const getPopulationStatus = async (divId, key) => {
    try {
--    const response = await fetch(`https://apis.data.go.kr/B553077/api/open/sdsc2/population/status?${params}`)
-+    const allowList = new Set(['storeListInDong', 'storeListInBuilding', 'storeListInRadius'])
-+    const targetOperation = allowList.has(operation) ? operation : 'storeListInDong'
-+
-+    const response = await fetch(`https://apis.data.go.kr/B553077/api/open/sdsc2/${targetOperation}?${params}`)
-     const text = await response.text()
--    res.status(200).send(text)
-+    res.status(response.status).send(text)
-   } catch (e) {
-     res.status(500).json({ error: e.message })
+-    const params = new URLSearchParams({ divId, key })
+-    const response = await fetch(`/api/population?${params}`)
+-    const data = await response.json()
+-    return data?.body
++    return await getStoresInDong({ divId, key })
+   } catch (error) {
+-    console.error("인구 분석 데이터 로드 실패:", error)
++    console.error('인구 분석 데이터 로드 실패:', error)
+     return null
    }
  }
  
