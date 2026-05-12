@@ -43,6 +43,20 @@ const S = {
 function BuildingStack({ floors, selectedHo }) {
   const targetFloor = selectedHo ? (selectedHo.length >= 3 ? selectedHo.slice(0, -2) : selectedHo.charAt(0)) : null;
 
+  // 층수 정렬 로직 추가
+  const sortedFloors = [...floors].sort((a, b) => {
+    const getLevel = (name) => {
+      // 지하층 처리 (예: 지하1층 -> -1)
+      if (name.includes('지하') || name.includes('B')) {
+        const num = name.replace(/[^0-9]/g, '');
+        return -parseInt(num || 1);
+      }
+      // 지상층 처리 (예: 1층 -> 1)
+      return parseInt(name.replace(/[^0-9]/g, '') || 0);
+    };
+    return getLevel(a.floor) - getLevel(b.floor);
+  });
+
   useEffect(() => {
     const target = document.getElementById('active-floor');
     if (target) {
@@ -52,7 +66,8 @@ function BuildingStack({ floors, selectedHo }) {
 
   return (
     <div style={S.stackContainer}>
-      {floors.map((f, i) => {
+      {/* 이제 floors 대신 정렬된 sortedFloors를 사용합니다 */}
+      {sortedFloors.map((f, i) => {
         const isTarget = targetFloor && f.floor.includes(targetFloor);
         const isBasement = f.floor.includes('지하') || f.floor.includes('B');
 
@@ -73,51 +88,22 @@ function BuildingStack({ floors, selectedHo }) {
               padding: '0 16px'
             }}
           >
-            {/* 1. 층수 */}
-            <span style={{ width: '40px', fontWeight: '700', fontSize:'11px' }}>
-              {f.floor}
-            </span>
+            <span style={{ width: '40px', fontWeight: '700', fontSize:'11px' }}>{f.floor}</span>
             
-            {/* 2. 대용량 + 세부용도 (수정된 부분) */}
-            <div style={{ 
-              flex: 1, 
-              textAlign: 'left', 
-              paddingLeft: '12px',
-              overflow: 'hidden',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px'
-            }}>
-              {/* 대용도 (예: 제2종근생) */}
+            <div style={{ flex: 1, textAlign: 'left', paddingLeft: '12px', overflow: 'hidden', display: 'flex', alignItems: 'center', gap: '6px' }}>
               <span style={{ 
-                fontSize: '10px', 
-                fontWeight: '700',
+                fontSize: '9px', fontWeight: '800',
                 background: isTarget ? 'rgba(255,255,255,0.2)' : '#f1f3f5',
-                padding: '2px 6px',
-                borderRadius: '4px',
-                whiteSpace: 'nowrap'
+                padding: '2px 5px', borderRadius: '4px', whiteSpace: 'nowrap'
               }}>
                 {f.purpose}
               </span>
-              {/* 세부용도 (예: 사무소) */}
-              <span style={{ 
-                fontSize: '11px', 
-                opacity: isTarget ? 0.9 : 0.6,
-                whiteSpace: 'nowrap',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis'
-              }}>
+              <span style={{ fontSize: '11px', opacity: isTarget ? 0.9 : 0.6, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                 {f.detailPurpose}
               </span>
             </div>
 
-            {/* 3. 면적 */}
-            <span style={{ 
-              fontSize: '11px', 
-              fontWeight: '700',
-              color: isTarget ? '#fff' : '#007AFF',
-              marginLeft: '8px'
-            }}>
+            <span style={{ fontSize: '11px', fontWeight: '700', color: isTarget ? '#fff' : '#007AFF', marginLeft: '8px' }}>
               {f.area}
             </span>
           </div>
