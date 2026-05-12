@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { getBuildingInfo, getFloorInfo, getUnitInfo } from '../api/building'
+import PopulationAnalysis from '../components/PopulationAnalysis';
 
 const S = {
   wrap: { minHeight:'100vh', background:'#f5f5f7', paddingBottom: '60px' },
@@ -112,6 +113,8 @@ function BuildingStack({ floors, selectedHo }) {
           </div>
         )
       })}
+      <hr style={{ margin: '50px 0', border: '1px solid #eee' }} />
+<PopulationAnalysis bjdongCode={jibunData?.bjdongCode} />
     </div>
   )
 }
