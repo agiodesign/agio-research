@@ -1,9 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { getStoreList } from '../api/analysis';
 
-const TARGET = {
+const CATEGORIES = {
+  'I2': { label: '음식', icon: '🍽️', color: '#FF6B6B' },
+  'G2': { label: '소매', icon: '🛍️', color: '#4ECDC4' },
   'P1': { label: '교육', icon: '📚', color: '#45B7D1' },
   'Q1': { label: '보건의료', icon: '🏥', color: '#96CEB4' },
+  'L1': { label: '부동산', icon: '🏠', color: '#F7DC6F' },
+  'M1': { label: '과학·기술', icon: '💼', color: '#DDA0DD' },
+  'F2': { label: '생활서비스', icon: '✂️', color: '#98FB98' },
+  'N1': { label: '시설관리', icon: '🔧', color: '#F0A500' },
 }
 
 function SubItem({ name, stores }) {
@@ -17,9 +23,7 @@ function SubItem({ name, stores }) {
       {open && (
         <div style={{display:'flex', flexWrap:'wrap', gap:'4px', paddingBottom:'6px'}}>
           {stores.map((s, i) => (
-            <span key={i} style={{fontSize:'11px', background:'#f5f5f7', padding:'3px 8px', borderRadius:'6px', color:'#48484a'}}>
-              {s}
-            </span>
+            <span key={i} style={{fontSize:'11px', background:'#f5f5f7', padding:'3px 8px', borderRadius:'6px', color:'#48484a'}}>{s}</span>
           ))}
         </div>
       )}
@@ -38,21 +42,17 @@ function MidItem({ name, subs }) {
       </div>
       {open && (
         <div style={{marginTop:'4px'}}>
-          {Object.entries(subs)
-            .sort((a, b) => b[1].length - a[1].length)
-            .map(([sName, stores]) => (
-              <SubItem key={sName} name={sName} stores={stores} />
-            ))}
+          {Object.entries(subs).sort((a,b) => b[1].length - a[1].length).map(([sName, stores]) => (
+            <SubItem key={sName} name={sName} stores={stores} />
+          ))}
         </div>
       )}
     </div>
   )
 }
 
-function CategorySection({ title, icon, color, items }) {
-  const [open, setOpen] = useState(false)
-
-  // 중분류 → 소분류 그룹핑
+function CategoryDetail({ cd, items }) {
+  const cat = CATEGORIES[cd]
   const mids = {}
   items.forEach(item => {
     const m = item.indsMclsNm
@@ -63,30 +63,17 @@ function CategorySection({ title, icon, color, items }) {
   })
 
   return (
-    <div style={{border:`1.5px solid ${color}30`, borderRadius:'16px', overflow:'hidden'}}>
-      <div onClick={() => setOpen(!open)} style={{display:'flex', justifyContent:'space-between', alignItems:'center', padding:'16px', background:`${color}15`, cursor:'pointer'}}>
-        <div style={{display:'flex', alignItems:'center', gap:'8px'}}>
-          <span style={{fontSize:'20px'}}>{icon}</span>
-          <div>
-            <div style={{fontSize:'15px', fontWeight:'700', color:'#1d1d1f'}}>{title}</div>
-            <div style={{fontSize:'12px', color:'#86868b'}}>총 {items.length}개 · {Object.keys(mids).length}개 분류</div>
-          </div>
-        </div>
-        <span style={{fontSize:'12px', color:'#86868b'}}>{open ? '▲' : '▼'}</span>
+    <div style={{border:`1.5px solid ${cat.color}40`, borderRadius:'16px', padding:'16px', marginTop:'10px'}}>
+      <div style={{fontSize:'14px', fontWeight:'700', color:'#1d1d1f', marginBottom:'12px'}}>
+        {cat.icon} {cat.label} <span style={{fontWeight:'400', color:'#86868b', fontSize:'12px'}}>총 {items.length}개</span>
       </div>
-      {open && (
-        <div style={{padding:'12px'}}>
-          {Object.entries(mids)
-            .sort((a, b) => {
-              const aTotal = Object.values(b[1]).reduce((s, x) => s + x.length, 0)
-              const bTotal = Object.values(a[1]).reduce((s, x) => s + x.length, 0)
-              return bTotal - aTotal
-            })
-            .map(([mName, subs]) => (
-              <MidItem key={mName} name={mName} subs={subs} />
-            ))}
-        </div>
-      )}
+      {Object.entries(mids).sort((a,b) => {
+        const at = Object.values(a[1]).reduce((s,x) => s+x.length, 0)
+        const bt = Object.values(b[1]).reduce((s,x) => s+x.length, 0)
+        return bt - at
+      }).map(([mName, subs]) => (
+        <MidItem key={mName} name={mName} subs={subs} />
+      ))}
     </div>
   )
 }
@@ -94,6 +81,7 @@ function CategorySection({ title, icon, color, items }) {
 export default function PopulationAnalysis({ bjdongCode }) {
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(false)
+  const [selected, setSelected] = useState([])
 
   useEffect(() => {
     if (!bjdongCode) return
@@ -110,21 +98,54 @@ export default function PopulationAnalysis({ bjdongCode }) {
   )
   if (!data?.items) return null
 
+  // 대분류별 집계
   const grouped = {}
   data.items.forEach(item => {
     const cd = item.indsLclsCd
-    if (!TARGET[cd]) return
     if (!grouped[cd]) grouped[cd] = []
     grouped[cd].push(item)
   })
 
+  const toggle = (cd) => {
+    setSelected(prev => prev.includes(cd) ? prev.filter(x => x !== cd) : [...prev, cd])
+  }
+
   return (
-    <div style={{background:'#fff', borderRadius:'20px', padding:'20px', boxShadow:'0 1px 3px rgba(0,0,0,0.05)', display:'flex', flexDirection:'column', gap:'10px'}}>
-      <div style={{fontSize:'13px', fontWeight:'600', color:'#86868b'}}>🔍 상권 분석</div>
-      {Object.entries(TARGET).map(([cd, cat]) => (
-        grouped[cd]?.length > 0 && (
-          <CategorySection key={cd} title={cat.label} icon={cat.icon} color={cat.color} items={grouped[cd]} />
-        )
+    <div style={{background:'#fff', borderRadius:'20px', padding:'20px', boxShadow:'0 1px 3px rgba(0,0,0,0.05)'}}>
+      <div style={{fontSize:'13px', fontWeight:'600', color:'#86868b', marginBottom:'12px'}}>🔍 상권 분석</div>
+      <div style={{fontSize:'24px', fontWeight:'800', color:'#1d1d1f', marginBottom:'16px'}}>
+        총 {data.filteredCount?.toLocaleString()}개 업소
+      </div>
+
+      {/* 업종 선택 토글 */}
+      <div style={{display:'flex', flexWrap:'wrap', gap:'8px', marginBottom:'4px'}}>
+        {Object.entries(grouped)
+          .sort((a, b) => b[1].length - a[1].length)
+          .map(([cd, items]) => {
+            const cat = CATEGORIES[cd]
+            const isOn = selected.includes(cd)
+            return (
+              <button
+                key={cd}
+                onClick={() => toggle(cd)}
+                style={{
+                  border: `1.5px solid ${cat?.color || '#ccc'}`,
+                  background: isOn ? (cat?.color || '#007AFF') : '#fff',
+                  color: isOn ? '#fff' : '#1d1d1f',
+                  borderRadius:'20px', padding:'6px 14px',
+                  fontSize:'12px', fontWeight:'600', cursor:'pointer',
+                  transition:'all 0.2s'
+                }}
+              >
+                {cat?.icon || '🏢'} {cat?.label || cd} {items.length}
+              </button>
+            )
+          })}
+      </div>
+
+      {/* 선택된 업종 상세 */}
+      {selected.map(cd => (
+        grouped[cd] && <CategoryDetail key={cd} cd={cd} items={grouped[cd]} />
       ))}
     </div>
   )
