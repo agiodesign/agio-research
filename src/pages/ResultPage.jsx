@@ -43,19 +43,19 @@ const S = {
 function BuildingStack({ floors, selectedHo }) {
   const targetFloor = selectedHo ? (selectedHo.length >= 3 ? selectedHo.slice(0, -2) : selectedHo.charAt(0)) : null;
 
-  // 층수 정렬 로직 추가
-  const sortedFloors = [...floors].sort((a, b) => {
-    const getLevel = (name) => {
-      // 지하층 처리 (예: 지하1층 -> -1)
-      if (name.includes('지하') || name.includes('B')) {
-        const num = name.replace(/[^0-9]/g, '');
-        return -parseInt(num || 1);
-      }
-      // 지상층 처리 (예: 1층 -> 1)
-      return parseInt(name.replace(/[^0-9]/g, '') || 0);
-    };
-    return getLevel(a.floor) - getLevel(b.floor);
-  });
+// 층수 정렬 로직 (지상 높은 층 -> 지하 순으로 정렬)
+const sortedFloors = [...floors].sort((a, b) => {
+  const getLevel = (name) => {
+    if (name.includes('지하') || name.includes('B') || name.includes('지')) {
+      const num = name.replace(/[^0-9]/g, '');
+      return -parseInt(num || 1);
+    }
+    return parseInt(name.replace(/[^0-9]/g, '') || 0);
+  };
+  // 큰 숫자(높은 층)가 배열의 앞(위)으로 오게 해서, 
+  // column-reverse가 이를 맨 위로 보내게 만듭니다.
+  return getLevel(b.floor) - getLevel(a.floor);
+});
 
   useEffect(() => {
     const target = document.getElementById('active-floor');
