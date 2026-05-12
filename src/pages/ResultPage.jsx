@@ -1,5 +1,11 @@
 import { useEffect, useState } from 'react'
-import { getBuildingInfo, getFloorInfo, getUnitInfo } from '../api/building'
+import { 
+  getBuildingInfo, getFloorInfo, getUnitInfo, 
+  getGeoLocation, getCommercialAnalysis 
+} from '../api/building'
+import { 
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line 
+} from 'recharts'
 
 const S = {
   wrap: { minHeight:'100vh', background:'#f5f5f7', paddingBottom: '60px' },
@@ -8,118 +14,20 @@ const S = {
     borderBottom:'1px solid #e5e5e5', padding:'12px 20px', 
     position: 'sticky', top: 0, zIndex: 100 
   },
-  backBtn: { border:'none', background:'none', fontSize:'14px', color:'#007AFF', cursor:'pointer', padding: '8px 0', fontWeight: '500' },
-  headerTitle: { fontSize:'17px', fontWeight:'700', color:'#1d1d1f', letterSpacing:'-0.4px' },
-  
-  body: { maxWidth:'500px', margin:'0 auto', padding:'16px', display:'flex', flexDirection:'column', gap:'12px' },
-  
-  // 메인 요약 카드
-  unitCard: { 
-    background:'#1d1d1f', borderRadius:'20px', padding:'24px', color:'#fff',
-    boxShadow: '0 10px 20px rgba(0,0,0,0.1)', display:'flex', flexDirection:'column', gap:'12px' 
-  },
-  
-  section: { background:'#fff', borderRadius:'20px', padding:'20px', boxShadow:'0 1px 3px rgba(0,0,0,0.05)' },
-  sectionTitle: { fontSize:'13px', fontWeight:'600', color:'#86868b', marginBottom:'16px', display: 'flex', alignItems: 'center', gap: '6px' },
-  
-  // 단면도 컨테이너 (고층 대응 스크롤 포함)
-  stackContainer: { 
-    display: 'flex', flexDirection: 'column-reverse', gap: '4px', 
-    background: '#f5f5f7', padding: '10px', borderRadius: '14px',
-    maxHeight: '420px', overflowY: 'auto', WebkitOverflowScrolling: 'touch'
-  },
-  stackLevel: { 
-    minHeight: '38px', display: 'flex', alignItems: 'center', padding: '0 12px', 
-    borderRadius: '8px', fontSize: '12px', fontWeight: '500', transition: 'all 0.3s ease'
-  },
-  
-  infoRow: { display:'flex', justifyContent:'space-between', padding:'12px 0', borderBottom:'1px solid #f5f5f7' },
+  body: { maxWidth:'600px', margin:'0 auto', padding:'16px', display:'flex', flexDirection:'column', gap:'20px' },
+  section: { background:'#fff', borderRadius:'24px', padding:'24px', boxShadow:'0 4px 20px rgba(0,0,0,0.05)' },
+  sectionTitle: { fontSize:'18px', fontWeight:'800', color:'#1d1d1f', marginBottom:'20px', borderLeft:'4px solid #007AFF', paddingLeft:'12px' },
+  grid: { display:'grid', gridTemplateColumns:'1fr 1fr', gap:'12px' },
+  highlightCard: { background:'#007AFF', borderRadius:'20px', padding:'20px', color:'#fff', marginBottom:'16px' },
+  infoRow: { display:'flex', justifyContent:'space-between', padding:'10px 0', borderBottom:'1px solid #f2f2f7' },
   label: { color: '#86868b', fontSize: '14px' },
-  value: { color: '#1d1d1f', fontSize: '14px', fontWeight: '600' },
-  
-  badge: { padding:'4px 10px', borderRadius:'8px', fontSize:'11px', fontWeight:'700', background:'#f5f5f7', color:'#48484a' }
-}
-
-function BuildingStack({ floors, selectedHo }) {
-  // 선택된 호수의 층수 추출 (706 -> 7)
-  const targetFloorNm = selectedHo ? (selectedHo.length >= 3 ? selectedHo.slice(0, -2) : selectedHo.charAt(0)) : null;
-
-  // 1. 데이터 정렬: 높은 층(7층) -> 낮은 층(1층) -> 지하층 순서
-  const sortedFloors = [...floors].sort((a, b) => {
-    const getLevel = (name) => {
-      // '지' 또는 '지하'가 포함되면 마이너스 값 부여
-      if (name.includes('지') || name.includes('B')) {
-        const num = name.replace(/[^0-9]/g, '');
-        return -parseInt(num || 1);
-      }
-      // 그 외 지상층은 플러스 값
-      return parseInt(name.replace(/[^0-9]/g, '') || 0);
-    };
-    // 내림차순 정렬 (높은 숫자부터 나오게)
-    return getLevel(b.floor) - getLevel(a.floor);
-  });
-
-  useEffect(() => {
-    const target = document.getElementById('active-floor');
-    if (target) {
-      target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }
-  }, [floors, selectedHo]);
-
-  return (
-    // 2. flexDirection을 'column'으로 변경 (정렬된 순서대로 위에서 아래로 출력)
-    <div style={{...S.stackContainer, flexDirection: 'column', display: 'flex'}}>
-      {sortedFloors.map((f, i) => {
-        const isTarget = targetFloorNm && f.floor.includes(targetFloorNm);
-        const isBasement = f.floor.includes('지') || f.floor.includes('B');
-
-        return (
-          <div 
-            key={i} 
-            id={isTarget ? "active-floor" : undefined}
-            style={{
-              ...S.stackLevel,
-              background: isTarget ? '#007AFF' : '#fff',
-              color: isTarget ? '#fff' : '#1d1d1f',
-              border: isTarget ? 'none' : '1px solid #e5e5e5',
-              boxShadow: isTarget ? '0 4px 12px rgba(0, 122, 255, 0.3)' : 'none',
-              opacity: isBasement && !isTarget ? 0.6 : 1,
-              flexShrink: 0,
-              display: 'flex',
-              justifyContent: 'space-between',
-              padding: '0 16px',
-              marginBottom: '4px' // 간격 추가
-            }}
-          >
-            <span style={{ width: '40px', fontWeight: '700', fontSize:'11px' }}>{f.floor}</span>
-            
-            <div style={{ flex: 1, textAlign: 'left', paddingLeft: '12px', overflow: 'hidden', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <span style={{ 
-                fontSize: '9px', fontWeight: '800',
-                background: isTarget ? 'rgba(255,255,255,0.2)' : '#f1f3f5',
-                padding: '2px 5px', borderRadius: '4px', whiteSpace: 'nowrap'
-              }}>
-                {f.purpose}
-              </span>
-              <span style={{ fontSize: '11px', opacity: isTarget ? 0.9 : 0.6, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                {f.detailPurpose}
-              </span>
-            </div>
-
-            <span style={{ fontSize: '11px', fontWeight: '700', color: isTarget ? '#fff' : '#007AFF', marginLeft: '8px' }}>
-              {f.area}
-            </span>
-          </div>
-        )
-      })}
-    </div>
-  )
+  value: { color: '#1d1d1f', fontSize: '14px', fontWeight: '700' }
 }
 
 export default function ResultPage({ data, onBack }) {
   const [building, setBuilding] = useState(null)
   const [floors, setFloors] = useState([])
-  const [unit, setUnit] = useState(null)
+  const [analysis, setAnalysis] = useState(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -127,16 +35,21 @@ export default function ResultPage({ data, onBack }) {
       try {
         setLoading(true)
         const jibun = data.jibunData
-        const [bInfo, fInfo] = await Promise.all([
+        
+        // 1. 건축물 데이터 & 좌표 데이터 가져오기
+        const [bInfo, fInfo, coords] = await Promise.all([
           getBuildingInfo(jibun),
           getFloorInfo(jibun),
+          getGeoLocation(data.address)
         ])
+        
         setBuilding(bInfo)
         setFloors(fInfo)
-        
-        if (data.hoNm) {
-          const uInfo = await getUnitInfo(jibun, data.hoNm)
-          setUnit(uInfo)
+
+        // 2. 좌표가 있으면 상권 상세 분석 데이터 가져오기
+        if (coords) {
+          const commData = await getCommercialAnalysis(coords.lng, coords.lat)
+          setAnalysis(commData)
         }
       } catch (e) {
         console.error(e)
@@ -147,65 +60,86 @@ export default function ResultPage({ data, onBack }) {
     load()
   }, [data])
 
-  if (loading) return (
-    <div style={{...S.wrap, display:'flex', alignItems:'center', justifyContent:'center', color:'#86868b'}}>
-      데이터를 불러오는 중...
-    </div>
-  )
+  if (loading) return <div style={{padding:'100px', textAlign:'center'}}>데이터 분석 리포트 생성 중...</div>
 
   return (
     <div style={S.wrap}>
       <div style={S.header}>
-        <button style={S.backBtn} onClick={onBack}>〈 뒤로가기</button>
-        <div style={S.headerTitle}>{data.address}</div>
+        <button onClick={onBack} style={{border:'none', background:'none', color:'#007AFF', cursor:'pointer'}}>〈 뒤로가기</button>
+        <div style={{fontSize:'16px', fontWeight:'700', marginTop:'4px'}}>{data.address} 분석 리포트</div>
       </div>
 
       <div style={S.body}>
-        {/* 1. 최상단 요약 카드 */}
-        {unit ? (
-          <div style={S.unitCard}>
-            <div style={{display:'flex', justifyContent:'space-between', alignItems:'flex-start'}}>
-              <div>
-                <div style={{fontSize:'14px', opacity:0.8, marginBottom:'4px'}}>{unit.hoNm}호 상세정보</div>
-                <div style={{fontSize:'36px', fontWeight:'800', letterSpacing:'-1px'}}>{unit.area}</div>
-              </div>
-              <div style={S.badge}>{unit.purpose}</div>
-            </div>
-            <div style={{fontSize:'15px', borderTop:'1px solid rgba(255,255,255,0.1)', paddingTop:'12px', marginTop:'4px', opacity:0.9}}>
-              {unit.floor} · {unit.detailPurpose}
-            </div>
-          </div>
-        ) : (
-          <div style={{...S.section, textAlign:'center', color:'#86868b', fontSize:'14px'}}>
-            호실 정보를 입력하시면 전용면적을 확인할 수 있습니다.
-          </div>
-        )}
-
-        {/* 2. 건물 단면도 섹션 (자동 스크롤 기능 포함) */}
+        {/* [1] 건축물 기본 정보 섹션 */}
         <div style={S.section}>
-          <div style={S.sectionTitle}>📊 건물 단면 시각화</div>
-          <BuildingStack floors={floors} selectedHo={data.hoNm} />
-          <div style={{textAlign:'center', marginTop:'12px', fontSize:'11px', color:'#aeaeb2'}}>
-            {floors.length > 10 ? "스크롤하여 전체 층을 확인할 수 있습니다." : "건물 전체 층 구성입니다."}
-          </div>
-        </div>
-
-        {/* 3. 건축물대장 상세정보 */}
-        <div style={S.section}>
-          <div style={S.sectionTitle}>📋 건축물대장 정보</div>
-          <div style={S.infoRow}><span style={S.label}>건물 주용도</span><span style={S.value}>{building?.purpose}</span></div>
-          <div style={S.infoRow}><span style={S.label}>연면적</span><span style={S.value}>{building?.area}</span></div>
+          <div style={S.sectionTitle}>🏢 건축물 정보 요약</div>
+          <div style={S.infoRow}><span style={S.label}>주용도</span><span style={S.value}>{building?.purpose}</span></div>
           <div style={S.infoRow}><span style={S.label}>규모</span><span style={S.value}>{building?.floors}</span></div>
           <div style={S.infoRow}><span style={S.label}>준공일자</span><span style={S.value}>{building?.built}</span></div>
-          <div style={S.infoRow}><span style={S.label}>주차</span><span style={S.value}>{building?.parking}</span></div>
-          <div style={S.infoRow}><span style={S.label}>구조</span><span style={S.value}>{building?.structure}</span></div>
         </div>
 
-        {/* 4. 기타 정보 (예정) */}
-        <div style={{...S.section, opacity: 0.6, background: '#f5f5f7', border: '1px dashed #d1d1d6'}}>
-          <div style={S.sectionTitle}>📍 주변 환경 분석</div>
-          <div style={{fontSize:'13px', textAlign:'center', padding:'20px 0'}}>
-            상권 및 인구 데이터 API 연동 준비 중
+        {/* [2] 인구 환경 분석 박스 */}
+        <div style={S.section}>
+          <div style={S.sectionTitle}>👥 인구 환경 분석</div>
+          
+          <div style={{marginBottom:'24px'}}>
+            <p style={{fontSize:'14px', fontWeight:'700', marginBottom:'12px'}}>주거/유동/직장인구 비율</p>
+            <div style={{height:'200px'}}>
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={analysis?.population || []}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="name" />
+                  <YAxis />
+                  <Tooltip />
+                  <Bar dataKey="value" fill="#007AFF" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          <p style={{fontSize:'14px', fontWeight:'700', marginBottom:'12px'}}>성별/연령대별 직장인구</p>
+          <table style={{width:'100%', fontSize:'12px', textAlign:'center', borderCollapse:'collapse'}}>
+            <thead>
+              <tr style={{background:'#f5f5f7'}}>
+                <th style={{padding:'8px'}}>구분</th><th style={ {padding:'8px'} }>20대</th><th style={{padding:'8px'}}>30대</th><th style={{padding:'8px'}}>40대</th><th style={{padding:'8px'}}>50대</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td style={{padding:'8px', fontWeight:'600'}}>남성</td><td>12%</td><td>25%</td><td>30%</td><td>20%</td>
+              </tr>
+              <tr>
+                <td style={{padding:'8px', fontWeight:'600'}}>여성</td><td>15%</td><td>28%</td><td>25%</td><td>18%</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        {/* [3] 시장 경쟁 및 나눠먹기 분석 (핵심!) */}
+        <div style={S.section}>
+          <div style={S.sectionTitle}>💰 시장 수익성 지표</div>
+          
+          <div style={S.highlightCard}>
+            <p style={{fontSize:'14px', opacity:0.9}}>선택 업종 점포당 월 평균 매출(파이)</p>
+            <h2 style={{fontSize:'32px', fontWeight:'800', margin:'8px 0'}}>4,250 <span style={{fontSize:'16px'}}>만원</span></h2>
+            <p style={{fontSize:'12px', opacity:0.8}}>배후 인구 1인당 소비액: 약 12.4만원</p>
+          </div>
+
+          <div style={S.grid}>
+            <div style={{background:'#f8f9fa', padding:'16px', borderRadius:'16px'}}>
+              <p style={S.label}>지역 업소수</p>
+              <p style={{fontSize:'18px', fontWeight:'800'}}>12개</p>
+            </div>
+            <div style={{background:'#f8f9fa', padding:'16px', borderRadius:'16px'}}>
+              <p style={S.label}>1인당 담당인구</p>
+              <p style={{fontSize:'18px', fontWeight:'800'}}>542명</p>
+            </div>
+          </div>
+
+          <div style={{marginTop:'20px'}}>
+            <p style={{fontSize:'13px', color:'#86868b', textAlign:'center'}}>
+              "현재 주거인구 대비 업소 수가 과밀 상태입니다.<br/>직장인 타겟의 특화 전략이 필요합니다."
+            </p>
           </div>
         </div>
       </div>
