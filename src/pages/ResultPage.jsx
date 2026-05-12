@@ -41,9 +41,10 @@ const S = {
 }
 
 function BuildingStack({ floors, selectedHo }) {
-  // 호수에서 층수 추출 (예: 706 -> 7, 1205 -> 12)
+  // 사용자가 입력한 호수에서 '층'만 추출하는 로직 (예: 706 -> 7)
   const targetFloor = selectedHo ? (selectedHo.length >= 3 ? selectedHo.slice(0, -2) : selectedHo.charAt(0)) : null;
 
+  // 페이지가 로드될 때 선택된 층으로 화면을 스윽 옮겨주는 기능
   useEffect(() => {
     const target = document.getElementById('active-floor');
     if (target) {
@@ -54,7 +55,9 @@ function BuildingStack({ floors, selectedHo }) {
   return (
     <div style={S.stackContainer}>
       {floors.map((f, i) => {
+        // 현재 이 칸이 사용자가 찾는 층인지 확인
         const isTarget = targetFloor && f.floor.includes(targetFloor);
+        // 지하층인지 확인 (디자인을 다르게 하기 위함)
         const isBasement = f.floor.includes('지하') || f.floor.includes('B');
 
         return (
@@ -63,17 +66,45 @@ function BuildingStack({ floors, selectedHo }) {
             id={isTarget ? "active-floor" : undefined}
             style={{
               ...S.stackLevel,
-              background: isTarget ? '#007AFF' : '#fff',
-              color: isTarget ? '#fff' : '#1d1d1f',
+              background: isTarget ? '#007AFF' : '#fff', // 선택되면 파란색
+              color: isTarget ? '#fff' : '#1d1d1f',      // 선택되면 글씨는 하얀색
               border: isTarget ? 'none' : '1px solid #e5e5e5',
               boxShadow: isTarget ? '0 4px 12px rgba(0, 122, 255, 0.3)' : 'none',
-              opacity: isBasement && !isTarget ? 0.6 : 1,
-              flexShrink: 0
+              opacity: isBasement && !isTarget ? 0.6 : 1, // 지하는 살짝 흐리게
+              flexShrink: 0,
+              display: 'flex',             // 가로로 배치
+              justifyContent: 'space-between', // 양 끝으로 밀어내기
+              padding: '0 16px',
+              cursor: 'default'
             }}
           >
-            <span style={{ width: '45px', fontWeight: '700', fontSize:'11px' }}>{f.floor}</span>
-            <span style={{ flex: 1, textAlign: 'right', fontSize: '11px', opacity: isTarget ? 0.9 : 0.7, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            {/* 1. 왼쪽: 층수 표시 */}
+            <span style={{ width: '40px', fontWeight: '700', fontSize:'11px' }}>
+              {f.floor}
+            </span>
+            
+            {/* 2. 가운데: 용도 표시 (공간이 부족하면 말줄임표) */}
+            <span style={{ 
+              flex: 1, 
+              textAlign: 'left', 
+              fontSize: '11px', 
+              paddingLeft: '12px',
+              opacity: isTarget ? 0.9 : 0.6, 
+              whiteSpace: 'nowrap', 
+              overflow: 'hidden', 
+              textOverflow: 'ellipsis' 
+            }}>
               {f.detailPurpose}
+            </span>
+
+            {/* 3. 오른쪽: 면적 표시 (새로 추가된 부분!) */}
+            <span style={{ 
+              fontSize: '11px', 
+              fontWeight: '700',
+              color: isTarget ? '#fff' : '#007AFF', // 면적을 파란색으로 강조
+              marginLeft: '8px'
+            }}>
+              {f.area}
             </span>
           </div>
         )
