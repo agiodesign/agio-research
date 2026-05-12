@@ -1,3 +1,32 @@
+// src/api/building.js
+
+const VWORLD_KEY = 'D7C2C114-A22B-3289-9FCB-4D7A163B183B';
+
+/**
+ * [Step 1] 주소를 위도/경도로 변환 (Vworld API)
+ */
+export async function getGeoLocation(address) {
+  try {
+    // 주소에 특수문자가 있을 수 있으므로 인코딩합니다.
+    const encodedAddr = encodeURIComponent(address);
+    const url = `https://api.vworld.kr/req/address?service=address&request=getcoord&version=2.0&crs=epsg:4326&address=${encodedAddr}&refine=true&simple=false&format=json&type=both&key=${VWORLD_KEY}`;
+
+    const res = await fetch(url);
+    const data = await res.json();
+
+    if (data.response.status === 'OK') {
+      const { x, y } = data.response.result.point;
+      console.log('📍 좌표 변환 성공:', { lng: x, lat: y });
+      return { lng: x, lat: y }; // x: 경도, y: 위도
+    } else {
+      console.error('❌ 좌표 변환 실패:', data.response.error?.text);
+      return null;
+    }
+  } catch (e) {
+    console.error('⚠️ Vworld API 에러:', e);
+    return null;
+  }
+}
 const PURPS = {
   '01': '단독주택', '02': '공동주택', '03': '제1종근린생활시설', '04': '제2종근린생활시설',
   '05': '문화및집회시설', '06': '종교시설', '07': '판매시설', '08': '운수시설', '09': '의료시설',
