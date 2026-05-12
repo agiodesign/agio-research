@@ -2,27 +2,28 @@ import React, { useState, useEffect } from 'react';
 import { getPopulationStatus } from '../api/analysis';
 
 const PopulationAnalysis = ({ bjdongCode }) => {
-  const [popData, setPopData] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const [debugInfo, setDebugInfo] = useState({ status: '대기 중', data: null, error: null });
 
   useEffect(() => {
     const fetchData = async () => {
-      // 법정동 코드가 없으면 실행하지 않음
-      if (!bjdongCode) return;
-      
-      setLoading(true);
-      setError(null);
-      
+      if (!bjdongCode) {
+        setDebugInfo(prev => ({ ...prev, status: '법정동 코드가 없습니다.' }));
+        return;
+      }
+
+      setDebugInfo(prev => ({ ...prev, status: `데이터 호출 시작 (코드: ${bjdongCode})` }));
+
       try {
-        // 소상공인 API 호출 (법정동 기준)
+        // 우선 전달받은 코드 그대로 호출
         const result = await getPopulationStatus('bjdongCd', bjdongCode);
-        setPopData(result);
+        
+        if (result) {
+          setDebugInfo({ status: '✅ 호출 성공!', data: result, error: null });
+        } else {
+          setDebugInfo({ status: '⚠️ 호출은 됐으나 데이터가 비어있음(null)', data: null, error: null });
+        }
       } catch (err) {
-        console.error("데이터 로드 실패:", err);
-        setError("데이터를 가져오는 중 오류가 발생했습니다.");
-      } finally {
-        setLoading(false);
+        setDebugInfo({ status: '❌ API 호출 실패(에러 발생)', data: null, error: err.message });
       }
     };
 
@@ -30,44 +31,23 @@ const PopulationAnalysis = ({ bjdongCode }) => {
   }, [bjdongCode]);
 
   return (
-    <div style={{ 
-      marginTop: '40px', 
-      padding: '20px', 
-      border: '2px solid #4A90E2', 
-      borderRadius: '8px',
-      backgroundColor: '#fff',
-      textAlign: 'left'
-    }}>
-      <h2 style={{ color: '#4A90E2', marginBottom: '15px' }}>📊 상권 인구 분석 리포트</h2>
+    <div style={{ marginTop: '40px', padding: '20px', border: '2px solid #FF5722', borderRadius: '8px', backgroundColor: '#fff' }}>
+      <h3 style={{ color: '#FF5722' }}>🛠️ 인구 데이터 연결 진단기</h3>
+      <p><strong>현재 상태:</strong> {debugInfo.status}</p>
       
-      {loading && <p>데이터를 불러오는 중입니다... ⏳</p>}
-      {error && <p style={{ color: 'red' }}>{error}</p>}
-      
-      {!loading && !popData && !error && (
-        <p>해당 지역({bjdongCode})의 인구 데이터를 찾을 수 없습니다.</p>
+      {debugInfo.error && (
+        <div style={{ color: 'red', background: '#fee', padding: '10px' }}>
+          <strong>에러 메시지:</strong> {debugInfo.error}
+        </div>
       )}
 
-      {!loading && popData && (
-        <div>
-          <div style={{ padding: '10px', background: '#e3f2fd', borderRadius: '4px', marginBottom: '20px' }}>
-            <p style={{ margin: 0, color: '#1976d2', fontWeight: 'bold' }}>
-              ✅ 성공적으로 데이터를 연결했습니다!
-            </p>
-            <small>이제 이 데이터를 활용해 그래프를 그릴 수 있습니다.</small>
-          </div>
-
-          <p><strong>수신된 데이터 미리보기:</strong></p>
-          <pre style={{ 
-            fontSize: '11px', 
-            background: '#333', 
-            color: '#fff', 
-            padding: '15px', 
-            borderRadius: '5px',
-            overflowX: 'auto',
-            maxHeight: '300px'
-          }}>
-            {JSON.stringify(popData, null, 2)}
-          </pre>
+      {debugInfo.data ? (
+        <pre style={{ fontSize: '11px', background: '#f4f4f4', padding: '15px', overflowX: 'auto' }}>
+          {JSON.stringify(debugInfo.data, null, 2)}
+        </pre>
+      ) : (
+        <div style={{ padding: '20px', background: '#eee', marginTop: '10px' }}>
+          받아온 데이터가 여기에 표시됩니다. 지금은 비어있습니다.
         </div>
       )}
     </div>
