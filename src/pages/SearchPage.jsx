@@ -33,34 +33,39 @@ export default function SearchPage({ onSearch }) {
 
   const openAddr = () => {
     new window.daum.Postcode({
-oncomplete: async (data) => {
-  const addr = data.roadAddress || data.jibunAddress
-  setAddress(addr)
-  setHoNm('')
-  const jibun = data.jibunAddress || ''
-  const parts = jibun.trim().split(' ')
-  const bunjiStr = parts[parts.length - 1] || '0'
-  const bunjiArr = bunjiStr.split('-')
-  const bun = bunjiArr[0] || '0'
-  const ji = bunjiArr[1] || '0'
-  const sigunguCd = data.sigunguCode || (data.bcode ? data.bcode.substring(0, 5) : '')
-  const bjdongCd = data.bcode ? data.bcode.substring(5, 10) : ''
+      oncomplete: (data) => {
+        const addr = data.roadAddress || data.jibunAddress
+        setAddress(addr)
+        setHoNm('')
+        const jibun = data.jibunAddress || ''
+        const parts = jibun.trim().split(' ')
+        const bunjiStr = parts[parts.length - 1] || '0'
+        const bunjiArr = bunjiStr.split('-')
+        const bun = bunjiArr[0] || '0'
+        const ji = bunjiArr[1] || '0'
+        const sigunguCd = data.sigunguCode || (data.bcode ? data.bcode.substring(0, 5) : '')
+        const bjdongCd = data.bcode ? data.bcode.substring(5, 10) : ''
 
-  // 주소 → 좌표 변환
-  let coords = null
-  try {
-    coords = await new Promise((resolve) => {
-      const geocoder = new window.kakao.maps.services.Geocoder()
-      geocoder.addressSearch(addr, (result, status) => {
-        if (status === window.kakao.maps.services.Status.OK) {
-          resolve({ lat: parseFloat(result[0].y), lon: parseFloat(result[0].x) })
-        } else resolve(null)
-      })
-    })
-  } catch(e) {}
+        // 카카오 지오코더로 좌표 변환
+        try {
+          const geocoder = new window.kakao.maps.services.Geocoder()
+          geocoder.addressSearch(addr, (result, status) => {
+            const coords = status === window.kakao.maps.services.Status.OK
+              ? { lat: parseFloat(result[0].y), lon: parseFloat(result[0].x) }
+              : null
+            setJibunData({ sigunguCd, bjdongCd, bun, ji, bcode: data.bcode, coords })
+          })
+        } catch(e) {
+          setJibunData({ sigunguCd, bjdongCd, bun, ji, bcode: data.bcode, coords: null })
+        }
+      },
+    }).open()
+  }
 
-  setJibunData({ sigunguCd, bjdongCd, bun, ji, bcode: data.bcode, coords })
-}
+  const handleSubmit = () => {
+    if (!address) return
+    onSearch({ address, detail, client, site, hoNm, jibunData, mode })
+  }
 
   return (
     <div style={S.wrap}>
@@ -122,11 +127,7 @@ oncomplete: async (data) => {
           </div>
         </div>
         <div style={{height:'20px'}} />
-        <button
-          style={address ? S.submitBtn : S.submitBtnOff}
-          onClick={() => address && onSearch({ address, detail, client, site, hoNm, jibunData, mode })}
-          disabled={!address}
-        >
+        <button style={address ? S.submitBtn : S.submitBtnOff} onClick={handleSubmit} disabled={!address}>
           분석 시작
         </button>
       </div>
