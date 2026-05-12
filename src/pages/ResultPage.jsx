@@ -192,8 +192,9 @@ export default function ResultPage({ data, onBack }) {
           <div style={S.infoRow}><span style={S.label}>구조</span><span style={S.value}>{building?.structure}</span></div>
         </div>
 
-        {/* 4. 상권 인구 분석 섹션 (여기 추가!) */}
-<PopulationAnalysis bjdongCode={data.jibunData?.bjdongCd || data.jibunData?.bjdongCode} />      </div>
+<PopulationAnalysis 
+  bjdongCode={(data.jibunData?.sigunguCd || '') + (data.jibunData?.bjdongCd || '')} 
+/>    </div>
     </div>
   )
 }
