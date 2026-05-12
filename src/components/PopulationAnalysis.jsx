@@ -93,7 +93,7 @@ export default function PopulationAnalysis({ bjdongCode }) {
 
   if (loading) return (
     <div style={{background:'#fff', borderRadius:'20px', padding:'24px', textAlign:'center', color:'#86868b', fontSize:'14px'}}>
-      상가 데이터 분석 중...
+      통계청, 교육청 자료 분석중
     </div>
   )
   if (!data?.items) return null
