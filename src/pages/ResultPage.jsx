@@ -41,21 +41,23 @@ const S = {
 }
 
 function BuildingStack({ floors, selectedHo }) {
-  const targetFloor = selectedHo ? (selectedHo.length >= 3 ? selectedHo.slice(0, -2) : selectedHo.charAt(0)) : null;
+  // 선택된 호수의 층수 추출 (706 -> 7)
+  const targetFloorNm = selectedHo ? (selectedHo.length >= 3 ? selectedHo.slice(0, -2) : selectedHo.charAt(0)) : null;
 
-// 층수 정렬 로직 (지상 높은 층 -> 지하 순으로 정렬)
-const sortedFloors = [...floors].sort((a, b) => {
-  const getLevel = (name) => {
-    if (name.includes('지하') || name.includes('B') || name.includes('지')) {
-      const num = name.replace(/[^0-9]/g, '');
-      return -parseInt(num || 1);
-    }
-    return parseInt(name.replace(/[^0-9]/g, '') || 0);
-  };
-  // 큰 숫자(높은 층)가 배열의 앞(위)으로 오게 해서, 
-  // column-reverse가 이를 맨 위로 보내게 만듭니다.
-  return getLevel(b.floor) - getLevel(a.floor);
-});
+  // 1. 데이터 정렬: 높은 층(7층) -> 낮은 층(1층) -> 지하층 순서
+  const sortedFloors = [...floors].sort((a, b) => {
+    const getLevel = (name) => {
+      // '지' 또는 '지하'가 포함되면 마이너스 값 부여
+      if (name.includes('지') || name.includes('B')) {
+        const num = name.replace(/[^0-9]/g, '');
+        return -parseInt(num || 1);
+      }
+      // 그 외 지상층은 플러스 값
+      return parseInt(name.replace(/[^0-9]/g, '') || 0);
+    };
+    // 내림차순 정렬 (높은 숫자부터 나오게)
+    return getLevel(b.floor) - getLevel(a.floor);
+  });
 
   useEffect(() => {
     const target = document.getElementById('active-floor');
@@ -65,11 +67,11 @@ const sortedFloors = [...floors].sort((a, b) => {
   }, [floors, selectedHo]);
 
   return (
-    <div style={S.stackContainer}>
-      {/* 이제 floors 대신 정렬된 sortedFloors를 사용합니다 */}
+    // 2. flexDirection을 'column'으로 변경 (정렬된 순서대로 위에서 아래로 출력)
+    <div style={{...S.stackContainer, flexDirection: 'column', display: 'flex'}}>
       {sortedFloors.map((f, i) => {
-        const isTarget = targetFloor && f.floor.includes(targetFloor);
-        const isBasement = f.floor.includes('지하') || f.floor.includes('B');
+        const isTarget = targetFloorNm && f.floor.includes(targetFloorNm);
+        const isBasement = f.floor.includes('지') || f.floor.includes('B');
 
         return (
           <div 
@@ -85,7 +87,8 @@ const sortedFloors = [...floors].sort((a, b) => {
               flexShrink: 0,
               display: 'flex',
               justifyContent: 'space-between',
-              padding: '0 16px'
+              padding: '0 16px',
+              marginBottom: '4px' // 간격 추가
             }}
           >
             <span style={{ width: '40px', fontWeight: '700', fontSize:'11px' }}>{f.floor}</span>
