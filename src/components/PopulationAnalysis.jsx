@@ -2,28 +2,34 @@ import React, { useState, useEffect } from 'react';
 import { getPopulationStatus } from '../api/analysis';
 
 const PopulationAnalysis = ({ bjdongCode }) => {
-  const [debugInfo, setDebugInfo] = useState({ status: '대기 중', data: null, error: null });
+  const [debugInfo, setDebugInfo] = useState({ status: '대기 중', data: null });
 
   useEffect(() => {
     const fetchData = async () => {
-      if (!bjdongCode) {
-        setDebugInfo(prev => ({ ...prev, status: '법정동 코드가 없습니다.' }));
-        return;
-      }
+      if (!bjdongCode) return;
 
-      setDebugInfo(prev => ({ ...prev, status: `데이터 호출 시작 (코드: ${bjdongCode})` }));
+      // 💡 핵심: 10자리 코드 중 앞의 8자리만 사용하도록 자릅니다.
+      const shortCode = bjdongCode.toString().substring(0, 8);
+      
+      setDebugInfo({ status: `8자리 코드로 재시도 중 (${shortCode})...`, data: null });
 
       try {
-        // 우선 전달받은 코드 그대로 호출
-        const result = await getPopulationStatus('bjdongCd', bjdongCode);
+        // 잘린 코드로 다시 호출
+        const result = await getPopulationStatus('adongCd', shortCode); // 구분값도 adongCd로 변경
         
-        if (result) {
-          setDebugInfo({ status: '✅ 호출 성공!', data: result, error: null });
+        if (result && result.length > 0) {
+          setDebugInfo({ status: '✅ 데이터 로드 성공!', data: result });
         } else {
-          setDebugInfo({ status: '⚠️ 호출은 됐으나 데이터가 비어있음(null)', data: null, error: null });
+          // 그래도 안되면 행정동이 아닌 법정동(bjdongCd) 8자리로 한 번 더 시도
+          const result2 = await getPopulationStatus('bjdongCd', shortCode);
+          if (result2) {
+            setDebugInfo({ status: '✅ 법정동 8자리로 성공!', data: result2 });
+          } else {
+            setDebugInfo({ status: '⚠️ 모든 시도 실패 (데이터 없음)', data: null });
+          }
         }
       } catch (err) {
-        setDebugInfo({ status: '❌ API 호출 실패(에러 발생)', data: null, error: err.message });
+        setDebugInfo({ status: '❌ 에러 발생', data: err.message });
       }
     };
 
@@ -31,23 +37,20 @@ const PopulationAnalysis = ({ bjdongCode }) => {
   }, [bjdongCode]);
 
   return (
-    <div style={{ marginTop: '40px', padding: '20px', border: '2px solid #FF5722', borderRadius: '8px', backgroundColor: '#fff' }}>
-      <h3 style={{ color: '#FF5722' }}>🛠️ 인구 데이터 연결 진단기</h3>
-      <p><strong>현재 상태:</strong> {debugInfo.status}</p>
+    <div style={{ marginTop: '20px', padding: '20px', border: '2px solid #FF5722', borderRadius: '12px', backgroundColor: '#fff' }}>
+      <h3 style={{ color: '#FF5722', marginTop: 0 }}>📊 인구 데이터 연결 현황</h3>
+      <p><strong>상태:</strong> {debugInfo.status}</p>
       
-      {debugInfo.error && (
-        <div style={{ color: 'red', background: '#fee', padding: '10px' }}>
-          <strong>에러 메시지:</strong> {debugInfo.error}
-        </div>
-      )}
-
       {debugInfo.data ? (
-        <pre style={{ fontSize: '11px', background: '#f4f4f4', padding: '15px', overflowX: 'auto' }}>
-          {JSON.stringify(debugInfo.data, null, 2)}
-        </pre>
+        <div>
+          <p style={{ color: 'green', fontWeight: 'bold' }}>데이터를 찾았습니다! 아래는 원본 데이터입니다:</p>
+          <pre style={{ fontSize: '11px', background: '#f4f4f4', padding: '15px', borderRadius: '8px', overflowX: 'auto', maxHeight: '200px' }}>
+            {JSON.stringify(debugInfo.data, null, 2)}
+          </pre>
+        </div>
       ) : (
-        <div style={{ padding: '20px', background: '#eee', marginTop: '10px' }}>
-          받아온 데이터가 여기에 표시됩니다. 지금은 비어있습니다.
+        <div style={{ padding: '15px', background: '#eee', borderRadius: '8px' }}>
+          아직 표시할 데이터가 없습니다.
         </div>
       )}
     </div>
