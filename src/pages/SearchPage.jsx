@@ -28,6 +28,7 @@ export default function SearchPage({ onSearch }) {
   const openAddr = () => {
     new window.daum.Postcode({
       oncomplete: (data) => {
+        console.log('전체 data:', data)  // 이 줄 추가
         const addr = data.roadAddress || data.jibunAddress
         setAddress(addr)
         setHoNm('')
