@@ -193,7 +193,7 @@ export default function ResultPage({ data, onBack }) {
         </div>
 
 <PopulationAnalysis 
-  bjdongCode={(data.jibunData?.sigunguCd || '') + (data.jibunData?.bjdongCd || '')} 
+  bjdongCode={data.jibunData?.bcode}
 />    </div>
     </div>
   )
