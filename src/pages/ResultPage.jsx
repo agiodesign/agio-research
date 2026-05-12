@@ -14,7 +14,6 @@ const S = {
   
   body: { maxWidth:'500px', margin:'0 auto', padding:'16px', display:'flex', flexDirection:'column', gap:'12px' },
   
-  // 메인 요약 카드
   unitCard: { 
     background:'#1d1d1f', borderRadius:'20px', padding:'24px', color:'#fff',
     boxShadow: '0 10px 20px rgba(0,0,0,0.1)', display:'flex', flexDirection:'column', gap:'12px' 
@@ -23,7 +22,6 @@ const S = {
   section: { background:'#fff', borderRadius:'20px', padding:'20px', boxShadow:'0 1px 3px rgba(0,0,0,0.05)' },
   sectionTitle: { fontSize:'13px', fontWeight:'600', color:'#86868b', marginBottom:'16px', display: 'flex', alignItems: 'center', gap: '6px' },
   
-  // 단면도 컨테이너 (고층 대응 스크롤 포함)
   stackContainer: { 
     display: 'flex', flexDirection: 'column-reverse', gap: '4px', 
     background: '#f5f5f7', padding: '10px', borderRadius: '14px',
@@ -42,21 +40,16 @@ const S = {
 }
 
 function BuildingStack({ floors, selectedHo }) {
-  // 선택된 호수의 층수 추출 (706 -> 7)
   const targetFloorNm = selectedHo ? (selectedHo.length >= 3 ? selectedHo.slice(0, -2) : selectedHo.charAt(0)) : null;
 
-  // 1. 데이터 정렬: 높은 층(7층) -> 낮은 층(1층) -> 지하층 순서
   const sortedFloors = [...floors].sort((a, b) => {
     const getLevel = (name) => {
-      // '지' 또는 '지하'가 포함되면 마이너스 값 부여
       if (name.includes('지') || name.includes('B')) {
         const num = name.replace(/[^0-9]/g, '');
         return -parseInt(num || 1);
       }
-      // 그 외 지상층은 플러스 값
       return parseInt(name.replace(/[^0-9]/g, '') || 0);
     };
-    // 내림차순 정렬 (높은 숫자부터 나오게)
     return getLevel(b.floor) - getLevel(a.floor);
   });
 
@@ -68,7 +61,6 @@ function BuildingStack({ floors, selectedHo }) {
   }, [floors, selectedHo]);
 
   return (
-    // 2. flexDirection을 'column'으로 변경 (정렬된 순서대로 위에서 아래로 출력)
     <div style={{...S.stackContainer, flexDirection: 'column', display: 'flex'}}>
       {sortedFloors.map((f, i) => {
         const isTarget = targetFloorNm && f.floor.includes(targetFloorNm);
@@ -89,11 +81,10 @@ function BuildingStack({ floors, selectedHo }) {
               display: 'flex',
               justifyContent: 'space-between',
               padding: '0 16px',
-              marginBottom: '4px' // 간격 추가
+              marginBottom: '4px'
             }}
           >
             <span style={{ width: '40px', fontWeight: '700', fontSize:'11px' }}>{f.floor}</span>
-            
             <div style={{ flex: 1, textAlign: 'left', paddingLeft: '12px', overflow: 'hidden', display: 'flex', alignItems: 'center', gap: '6px' }}>
               <span style={{ 
                 fontSize: '9px', fontWeight: '800',
@@ -106,15 +97,12 @@ function BuildingStack({ floors, selectedHo }) {
                 {f.detailPurpose}
               </span>
             </div>
-
             <span style={{ fontSize: '11px', fontWeight: '700', color: isTarget ? '#fff' : '#007AFF', marginLeft: '8px' }}>
               {f.area}
             </span>
           </div>
         )
       })}
-      <hr style={{ margin: '50px 0', border: '1px solid #eee' }} />
-<PopulationAnalysis bjdongCode={jibunData?.bjdongCode} />
     </div>
   )
 }
@@ -184,7 +172,7 @@ export default function ResultPage({ data, onBack }) {
           </div>
         )}
 
-        {/* 2. 건물 단면도 섹션 (자동 스크롤 기능 포함) */}
+        {/* 2. 건물 단면도 섹션 */}
         <div style={S.section}>
           <div style={S.sectionTitle}>📊 건물 단면 시각화</div>
           <BuildingStack floors={floors} selectedHo={data.hoNm} />
@@ -204,13 +192,8 @@ export default function ResultPage({ data, onBack }) {
           <div style={S.infoRow}><span style={S.label}>구조</span><span style={S.value}>{building?.structure}</span></div>
         </div>
 
-        {/* 4. 기타 정보 (예정) */}
-        <div style={{...S.section, opacity: 0.6, background: '#f5f5f7', border: '1px dashed #d1d1d6'}}>
-          <div style={S.sectionTitle}>📍 주변 환경 분석</div>
-          <div style={{fontSize:'13px', textAlign:'center', padding:'20px 0'}}>
-            상권 및 인구 데이터 API 연동 준비 중
-          </div>
-        </div>
+        {/* 4. 상권 인구 분석 섹션 (여기 추가!) */}
+        <PopulationAnalysis bjdongCode={data.jibunData?.bjdongCode} />
       </div>
     </div>
   )
