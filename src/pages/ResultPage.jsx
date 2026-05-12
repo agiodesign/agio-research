@@ -1,5 +1,6 @@
+// src/pages/ResultPage.jsx
 import { useEffect, useState } from 'react';
-import { getBuildingInfo, getFloorInfo } from '../api/building';
+import { getBuildingInfo } from '../api/building';
 
 export default function ResultPage({ data, onBack }) {
   const [building, setBuilding] = useState(null);
@@ -20,27 +21,28 @@ export default function ResultPage({ data, onBack }) {
     load();
   }, [data]);
 
-  if (loading) return <div style={{padding:'100px', textAlign:'center'}}>정보 불러오는 중...</div>;
+  if (loading) return <div style={{padding:'100px', textAlign:'center'}}>분석 리포트 로딩 중...</div>;
 
   return (
     <div style={{minHeight:'100vh', background:'#f5f5f7', padding:'20px'}}>
-      <button onClick={onBack} style={{marginBottom:'20px'}}>〈 뒤로가기</button>
-      <div style={{maxWidth:'600px', margin:'0 auto', background:'#fff', borderRadius:'20px', padding:'24px', boxShadow:'0 4px 12px rgba(0,0,0,0.1)'}}>
-        <h3 style={{marginBottom:'20px'}}>🏢 건축물 정보 요약</h3>
-        <div style={{display:'flex', justifyContent:'space-between', padding:'12px 0', borderBottom:'1px solid #eee'}}>
-          <span>주용도</span><strong>{building?.purpose}</strong>
-        </div>
-        <div style={{display:'flex', justifyContent:'space-between', padding:'12px 0', borderBottom:'1px solid #eee'}}>
-          <span>규모</span><strong>{building?.floors}</strong>
-        </div>
-        <div style={{display:'flex', justifyContent:'space-between', padding:'12px 0', borderBottom:'1px solid #eee'}}>
-          <span>대지면적</span><strong>{building?.area}</strong>
-        </div>
-        <div style={{display:'flex', justifyContent:'space-between', padding:'12px 0', borderBottom:'1px solid #eee'}}>
-          <span>준공일자</span><strong>{building?.built}</strong>
-        </div>
-        <div style={{display:'flex', justifyContent:'space-between', padding:'12px 0'}}>
-          <span>주차대수</span><strong>{building?.parking}</strong>
+      <div style={{maxWidth:'600px', margin:'0 auto'}}>
+        <button onClick={onBack} style={{marginBottom:'20px', border:'none', background:'none', color:'#007AFF', cursor:'pointer'}}>〈 뒤로가기</button>
+        
+        <div style={{background:'#fff', borderRadius:'24px', padding:'24px', boxShadow:'0 4px 20px rgba(0,0,0,0.05)'}}>
+          <h3 style={{fontSize:'18px', fontWeight:'800', marginBottom:'20px'}}>🏢 건축물 정보 요약</h3>
+          
+          {[
+            { label: '주용도', value: building?.purpose },
+            { label: '규모', value: building?.floors },
+            { label: '대지면적', value: building?.area },
+            { label: '준공일자', value: building?.built },
+            { label: '주차대수', value: building?.parking }
+          ].map((item, i) => (
+            <div key={i} style={{display:'flex', justifyContent:'space-between', padding:'12px 0', borderBottom: i === 4 ? 'none' : '1px solid #f2f2f7'}}>
+              <span style={{color:'#86868b'}}>{item.label}</span>
+              <span style={{fontWeight:'700'}}>{item.value || '-'}</span>
+            </div>
+          ))}
         </div>
       </div>
     </div>
