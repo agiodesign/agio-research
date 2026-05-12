@@ -1,6 +1,6 @@
  (cd "$(git rev-parse --show-toplevel)" && git apply --3way <<'EOF' 
 diff --git a/src/api/analysis.js b/src/api/analysis.js
-index a4d0b6b778a05e5c71227aa89a2c540641dd2d81..4066ff1029b1a2a5f32f48eae2fe52650f767695 100644
+index a4d0b6b778a05e5c71227aa89a2c540641dd2d81..22213af661738fcf958bef968b7aa47555b5d554 100644
 --- a/src/api/analysis.js
 +++ b/src/api/analysis.js
 @@ -1,21 +1,95 @@
@@ -25,12 +25,12 @@ index a4d0b6b778a05e5c71227aa89a2c540641dd2d81..4066ff1029b1a2a5f32f48eae2fe5265
 +    throw new Error(`JSON 파싱 실패: ${rawText.slice(0, 120)}`)
 +  }
 +
-+  const header = data?.header || data?.body?.header
++  const header = data?.header || data?.body?.header || data?.response?.header
 +  if (header?.resultCode && header.resultCode !== '00') {
 +    throw new Error(`상권 API 오류(${header.resultCode}): ${header.resultMsg || '알 수 없는 오류'}`)
 +  }
 +
-+  return data
++  return data?.response || data
 +}
 +
 +export function normalizeAreaCode(rawCode = '', divId = 'adongCd') {
