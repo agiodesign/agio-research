@@ -2,75 +2,82 @@ import { useEffect, useState } from 'react'
 import { getBuildingInfo, getFloorInfo, getUnitInfo } from '../api/building'
 
 const S = {
-  wrap: { minHeight:'100vh', background:'#f5f5f3' },
-  header: { background:'#fff', borderBottom:'1px solid #ebebeb', padding:'16px 24px', display:'flex', alignItems:'center', gap:'16px' },
-  backBtn: { padding:'8px 14px', background:'#f5f5f3', border:'none', borderRadius:'8px', fontSize:'13px', fontWeight:'600', cursor:'pointer', color:'#555' },
-  headerTitle: { fontSize:'15px', fontWeight:'700', color:'#1a1a1a' },
-  headerSub: { fontSize:'12px', color:'#888', marginTop:'2px' },
-  body: { maxWidth:'960px', margin:'0 auto', padding:'24px 20px', display:'grid', gridTemplateColumns:'1fr 1fr', gap:'16px' },
-  full: { gridColumn:'1 / -1' },
-  section: { background:'#fff', borderRadius:'14px', padding:'22px', boxShadow:'0 1px 8px rgba(0,0,0,0.05)' },
-  sectionTitle: { fontSize:'11px', fontWeight:'700', letterSpacing:'0.1em', color:'#888', textTransform:'uppercase', marginBottom:'16px', paddingBottom:'8px', borderBottom:'1px solid #f0f0f0' },
-  infoRow: { display:'flex', justifyContent:'space-between', alignItems:'center', padding:'8px 0', borderBottom:'1px solid #fafafa' },
-  infoLabel: { fontSize:'13px', color:'#666' },
-  infoValue: { fontSize:'13px', fontWeight:'600', color:'#1a1a1a' },
-  badge1: { display:'inline-block', padding:'3px 10px', borderRadius:'20px', fontSize:'12px', fontWeight:'700', background:'#eff6ff', color:'#2563eb' },
-  badge2: { display:'inline-block', padding:'3px 10px', borderRadius:'20px', fontSize:'12px', fontWeight:'700', background:'#f0fdf4', color:'#16a34a' },
-  badgeN: { display:'inline-block', padding:'3px 10px', borderRadius:'20px', fontSize:'12px', fontWeight:'600', background:'#f5f5f5', color:'#555' },
-  grid2: { display:'grid', gridTemplateColumns:'1fr 1fr', gap:'10px' },
-  grid4: { display:'grid', gridTemplateColumns:'1fr 1fr 1fr 1fr', gap:'10px' },
-  statCard: { background:'#f8f8f7', borderRadius:'10px', padding:'14px', textAlign:'center' },
-  statNum: { fontSize:'20px', fontWeight:'700', color:'#1a1a1a' },
-  statLabel: { fontSize:'11px', color:'#888', marginTop:'4px' },
-  loading: { display:'flex', alignItems:'center', justifyContent:'center', minHeight:'120px', fontSize:'14px', color:'#888' },
-  error: { background:'#fff0f0', border:'1px solid #ffcccc', borderRadius:'10px', padding:'14px', fontSize:'13px', color:'#cc0000' },
-  note: { background:'#fffbf0', border:'1px solid #ffe4a0', borderRadius:'10px', padding:'12px 14px', fontSize:'12px', color:'#a07000', marginBottom:'14px' },
-  th: { textAlign:'left', padding:'8px 10px', background:'#f8f8f7', fontSize:'11px', color:'#888', fontWeight:'600' },
-  td: { padding:'8px 10px', borderBottom:'1px solid #f5f5f5', fontSize:'13px' },
-  unitCard: { background:'#f0fdf4', border:'2px solid #16a34a', borderRadius:'12px', padding:'18px', marginBottom:'0', display:'flex', alignItems:'center', gap:'20px' },
-  unitLabel: { fontSize:'11px', fontWeight:'700', color:'#16a34a', letterSpacing:'0.08em', marginBottom:'4px' },
-  unitNum: { fontSize:'28px', fontWeight:'800', color:'#1a1a1a' },
-  unitSub: { fontSize:'12px', color:'#666', marginTop:'2px' },
+  wrap: { minHeight:'100vh', background:'#f5f5f7', paddingBottom: '60px' },
+  header: { 
+    background:'rgba(255,255,255,0.8)', backdropFilter:'blur(10px)', 
+    borderBottom:'1px solid #e5e5e5', padding:'12px 20px', 
+    position: 'sticky', top: 0, zIndex: 100 
+  },
+  backBtn: { border:'none', background:'none', fontSize:'14px', color:'#007AFF', cursor:'pointer', padding: '8px 0', fontWeight: '500' },
+  headerTitle: { fontSize:'17px', fontWeight:'700', color:'#1d1d1f', letterSpacing:'-0.4px' },
+  
+  body: { maxWidth:'500px', margin:'0 auto', padding:'16px', display:'flex', flexDirection:'column', gap:'12px' },
+  
+  // 메인 요약 카드
+  unitCard: { 
+    background:'#1d1d1f', borderRadius:'20px', padding:'24px', color:'#fff',
+    boxShadow: '0 10px 20px rgba(0,0,0,0.1)', display:'flex', flexDirection:'column', gap:'12px' 
+  },
+  
+  section: { background:'#fff', borderRadius:'20px', padding:'20px', boxShadow:'0 1px 3px rgba(0,0,0,0.05)' },
+  sectionTitle: { fontSize:'13px', fontWeight:'600', color:'#86868b', marginBottom:'16px', display: 'flex', alignItems: 'center', gap: '6px' },
+  
+  // 단면도 컨테이너 (고층 대응 스크롤 포함)
+  stackContainer: { 
+    display: 'flex', flexDirection: 'column-reverse', gap: '4px', 
+    background: '#f5f5f7', padding: '10px', borderRadius: '14px',
+    maxHeight: '420px', overflowY: 'auto', WebkitOverflowScrolling: 'touch'
+  },
+  stackLevel: { 
+    minHeight: '38px', display: 'flex', alignItems: 'center', padding: '0 12px', 
+    borderRadius: '8px', fontSize: '12px', fontWeight: '500', transition: 'all 0.3s ease'
+  },
+  
+  infoRow: { display:'flex', justifyContent:'space-between', padding:'12px 0', borderBottom:'1px solid #f5f5f7' },
+  label: { color: '#86868b', fontSize: '14px' },
+  value: { color: '#1d1d1f', fontSize: '14px', fontWeight: '600' },
+  
+  badge: { padding:'4px 10px', borderRadius:'8px', fontSize:'11px', fontWeight:'700', background:'#f5f5f7', color:'#48484a' }
 }
 
-const DUMMY_POP = {
-  total:'12,480명', male:'5,920명', female:'6,560명', households:'4,200세대',
-  age:[{label:'10대 이하',value:18},{label:'20대',value:14},{label:'30대',value:22},{label:'40대',value:21},{label:'50대',value:14},{label:'60대+',value:11}]
-}
-const DUMMY_EDU = { elementary:2, middle:1, high:1, academies:{국어:8,영어:15,수학:14,과학:6,예체능:20,기타:12} }
-const DUMMY_LIVE = { daycare:8, kindergarten:5, library:2, hospital:23, pharmacy:9, cafe:31, convenience:12 }
+function BuildingStack({ floors, selectedHo }) {
+  // 호수에서 층수 추출 (예: 706 -> 7, 1205 -> 12)
+  const targetFloor = selectedHo ? (selectedHo.length >= 3 ? selectedHo.slice(0, -2) : selectedHo.charAt(0)) : null;
 
-function PurposeBadge({ purpose }) {
-  const style = purpose.includes('1종') ? S.badge1 : purpose.includes('2종') ? S.badge2 : S.badgeN
-  return <span style={style}>{purpose}</span>
-}
+  useEffect(() => {
+    const target = document.getElementById('active-floor');
+    if (target) {
+      target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [floors, selectedHo]);
 
-function Bar({ data }) {
-  const max = Math.max(...data.map(d => d.value))
   return (
-    <div style={{display:'flex', flexDirection:'column', gap:'7px'}}>
-      {data.map(d => (
-        <div key={d.label} style={{display:'flex', alignItems:'center', gap:'8px'}}>
-          <div style={{width:'58px', fontSize:'11px', color:'#888', textAlign:'right', flexShrink:0}}>{d.label}</div>
-          <div style={{flex:1, background:'#f0f0f0', borderRadius:'4px', height:'8px'}}>
-            <div style={{width:`${(d.value/max)*100}%`, background:'#1a1a1a', borderRadius:'4px', height:'100%'}} />
+    <div style={S.stackContainer}>
+      {floors.map((f, i) => {
+        const isTarget = targetFloor && f.floor.includes(targetFloor);
+        const isBasement = f.floor.includes('지하') || f.floor.includes('B');
+
+        return (
+          <div 
+            key={i} 
+            id={isTarget ? "active-floor" : undefined}
+            style={{
+              ...S.stackLevel,
+              background: isTarget ? '#007AFF' : '#fff',
+              color: isTarget ? '#fff' : '#1d1d1f',
+              border: isTarget ? 'none' : '1px solid #e5e5e5',
+              boxShadow: isTarget ? '0 4px 12px rgba(0, 122, 255, 0.3)' : 'none',
+              opacity: isBasement && !isTarget ? 0.6 : 1,
+              flexShrink: 0
+            }}
+          >
+            <span style={{ width: '45px', fontWeight: '700', fontSize:'11px' }}>{f.floor}</span>
+            <span style={{ flex: 1, textAlign: 'right', fontSize: '11px', opacity: isTarget ? 0.9 : 0.7, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {f.detailPurpose}
+            </span>
           </div>
-          <div style={{width:'32px', fontSize:'11px', fontWeight:'600', color:'#1a1a1a'}}>{d.value}%</div>
-        </div>
-      ))}
-    </div>
-  )
-}
-
-function StatCard({ label, value }) {
-  return <div style={S.statCard}><div style={S.statNum}>{value}</div><div style={S.statLabel}>{label}</div></div>
-}
-
-function InfoRow({ label, value, purpose }) {
-  return (
-    <div style={S.infoRow}>
-      <span style={S.infoLabel}>{label}</span>
-      {purpose ? <PurposeBadge purpose={value} /> : <span style={S.infoValue}>{value}</span>}
+        )
+      })}
     </div>
   )
 }
@@ -80,8 +87,6 @@ export default function ResultPage({ data, onBack }) {
   const [floors, setFloors] = useState([])
   const [unit, setUnit] = useState(null)
   const [loading, setLoading] = useState(true)
-  const [unitLoading, setUnitLoading] = useState(false)
-  const [error, setError] = useState(null)
 
   useEffect(() => {
     async function load() {
@@ -94,162 +99,81 @@ export default function ResultPage({ data, onBack }) {
         ])
         setBuilding(bInfo)
         setFloors(fInfo)
-        if (bInfo.isComplex && data.hoNm && data.hoNm.trim() !== '') {
-          setUnitLoading(true)
-          const uInfo = await getUnitInfo(jibun, data.hoNm.trim())
+        
+        if (data.hoNm) {
+          const uInfo = await getUnitInfo(jibun, data.hoNm)
           setUnit(uInfo)
-          setUnitLoading(false)
         }
       } catch (e) {
-        setError(e.message)
+        console.error(e)
       } finally {
         setLoading(false)
       }
     }
     load()
-  }, [])
+  }, [data])
 
-  const totalAcademy = Object.values(DUMMY_EDU.academies).reduce((a,b) => a+b, 0)
+  if (loading) return (
+    <div style={{...S.wrap, display:'flex', alignItems:'center', justifyContent:'center', color:'#86868b'}}>
+      데이터를 불러오는 중...
+    </div>
+  )
 
   return (
     <div style={S.wrap}>
       <div style={S.header}>
-        <button style={S.backBtn} onClick={onBack}>← 돌아가기</button>
-        <div>
-          <div style={S.headerTitle}>
-            {data.address} {data.hoNm && `${data.hoNm}호`} {data.detail}
-          </div>
-          <div style={S.headerSub}>
-            {[data.client && `고객: ${data.client}`, data.site && `현장: ${data.site}`, '반경 500m 기준'].filter(Boolean).join(' · ')}
-          </div>
-        </div>
+        <button style={S.backBtn} onClick={onBack}>〈 뒤로가기</button>
+        <div style={S.headerTitle}>{data.address}</div>
       </div>
 
       <div style={S.body}>
-
-        {building?.isComplex && data.hoNm && data.hoNm.trim() !== '' && (
-          <div style={S.full}>
-            {unitLoading ? (
-              <div style={{...S.section, display:'flex', alignItems:'center', padding:'18px'}}>
-                <div style={{fontSize:'14px', color:'#888'}}>호실 정보 조회 중...</div>
+        {/* 1. 최상단 요약 카드 */}
+        {unit ? (
+          <div style={S.unitCard}>
+            <div style={{display:'flex', justifyContent:'space-between', alignItems:'flex-start'}}>
+              <div>
+                <div style={{fontSize:'14px', opacity:0.8, marginBottom:'4px'}}>{unit.hoNm}호 상세정보</div>
+                <div style={{fontSize:'36px', fontWeight:'800', letterSpacing:'-1px'}}>{unit.area}</div>
               </div>
-            ) : unit ? (
-              <div style={S.unitCard}>
-                <div>
-                  <div style={S.unitLabel}>🚪 전유부 조회 결과</div>
-                  <div style={S.unitNum}>{unit.area}</div>
-                  <div style={S.unitSub}>전용면적 · {unit.floor}</div>
-                </div>
-                <div style={{borderLeft:'1px solid #bbf7d0', paddingLeft:'20px'}}>
-                  <div style={{marginBottom:'6px'}}><PurposeBadge purpose={unit.purpose} /></div>
-                  <div style={{fontSize:'13px', color:'#555'}}>{unit.detailPurpose}</div>
-                  <div style={{fontSize:'12px', color:'#888', marginTop:'4px'}}>{unit.hoNm}호</div>
-                </div>
-              </div>
-            ) : (
-              <div style={{padding:'14px', background:'#fff8f8', border:'1px solid #fecaca', borderRadius:'12px'}}>
-                <div style={{fontSize:'13px', color:'#cc0000'}}>⚠️ {data.hoNm}호 정보를 찾을 수 없습니다. 호실 번호를 확인해주세요.</div>
-              </div>
-            )}
+              <div style={S.badge}>{unit.purpose}</div>
+            </div>
+            <div style={{fontSize:'15px', borderTop:'1px solid rgba(255,255,255,0.1)', paddingTop:'12px', marginTop:'4px', opacity:0.9}}>
+              {unit.floor} · {unit.detailPurpose}
+            </div>
+          </div>
+        ) : (
+          <div style={{...S.section, textAlign:'center', color:'#86868b', fontSize:'14px'}}>
+            호실 정보를 입력하시면 전용면적을 확인할 수 있습니다.
           </div>
         )}
 
+        {/* 2. 건물 단면도 섹션 (자동 스크롤 기능 포함) */}
         <div style={S.section}>
-          <div style={S.sectionTitle}>🏢 건물 정보 (건축물대장)</div>
-          {loading ? <div style={S.loading}>조회 중...</div>
-          : error ? <div style={S.error}>⚠️ {error}</div>
-          : building && (
-            <>
-              <InfoRow label="건물 용도" value={building.purpose} purpose />
-              <InfoRow label="연면적" value={building.area} />
-              <InfoRow label="층수" value={building.floors} />
-              <InfoRow label="준공연도" value={building.built} />
-              <InfoRow label="구조" value={building.structure} />
-              <InfoRow label="건폐율" value={building.bcRat} />
-              <InfoRow label="주차" value={building.parking} />
-              {building.isComplex && (
-                <div style={{marginTop:'10px', padding:'8px 12px', background:'#eff6ff', borderRadius:'8px', fontSize:'12px', color:'#2563eb', fontWeight:'600'}}>
-                  🏬 집합건물 — 호실 입력시 전용면적 조회 가능
-                </div>
-              )}
-            </>
-          )}
-        </div>
-
-        <div style={S.section}>
-          <div style={S.sectionTitle}>📐 층별 용도 및 면적</div>
-          {loading ? <div style={S.loading}>조회 중...</div>
-          : floors.length > 0 ? (
-            <table style={{width:'100%', borderCollapse:'collapse'}}>
-              <thead>
-                <tr>
-                  <th style={S.th}>층</th>
-                  <th style={S.th}>용도구분</th>
-                  <th style={S.th}>세부용도</th>
-                  <th style={{...S.th, textAlign:'right'}}>면적</th>
-                </tr>
-              </thead>
-              <tbody>
-                {floors.map((f, i) => (
-                  <tr key={i}>
-                    <td style={S.td}>{f.floor}</td>
-                    <td style={S.td}><PurposeBadge purpose={f.purpose} /></td>
-                    <td style={{...S.td, color:'#888'}}>{f.detailPurpose}</td>
-                    <td style={{...S.td, textAlign:'right', fontWeight:'600'}}>{f.area}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          ) : (
-            <div style={{fontSize:'13px', color:'#aaa'}}>층별 정보가 없습니다</div>
-          )}
-        </div>
-
-        <div style={S.section}>
-          <div style={S.sectionTitle}>👥 주거환경 (반경 500m)</div>
-          <div style={S.note}>📌 인구 데이터 API 연동 예정</div>
-          <div style={{...S.grid2, marginBottom:'16px'}}>
-            <StatCard label="총 인구" value={DUMMY_POP.total} />
-            <StatCard label="세대수" value={DUMMY_POP.households} />
-            <StatCard label="남성" value={DUMMY_POP.male} />
-            <StatCard label="여성" value={DUMMY_POP.female} />
-          </div>
-          <div style={{fontSize:'11px', color:'#888', marginBottom:'8px', fontWeight:'600'}}>연령대별 분포</div>
-          <Bar data={DUMMY_POP.age} />
-        </div>
-
-        <div style={S.section}>
-          <div style={S.sectionTitle}>🎓 교육환경 (반경 500m)</div>
-          <div style={S.note}>📌 학원 데이터 API 연동 예정</div>
-          <div style={{...S.grid4, marginBottom:'16px'}}>
-            <StatCard label="초등학교" value={DUMMY_EDU.elementary} />
-            <StatCard label="중학교" value={DUMMY_EDU.middle} />
-            <StatCard label="고등학교" value={DUMMY_EDU.high} />
-            <StatCard label="총 학원" value={totalAcademy} />
-          </div>
-          <div style={{fontSize:'11px', color:'#888', marginBottom:'8px', fontWeight:'600'}}>과목별 학원</div>
-          {Object.entries(DUMMY_EDU.academies).map(([k,v]) => (
-            <div key={k} style={S.infoRow}>
-              <span style={S.infoLabel}>{k}</span>
-              <span style={S.infoValue}>{v}개</span>
-            </div>
-          ))}
-        </div>
-
-        <div style={{...S.section, ...S.full}}>
-          <div style={S.sectionTitle}>🏪 생활편의 (반경 500m)</div>
-          <div style={S.note}>📌 소상공인 상권정보 API 연동 예정</div>
-          <div style={S.grid4}>
-            <StatCard label="어린이집" value={DUMMY_LIVE.daycare} />
-            <StatCard label="유치원" value={DUMMY_LIVE.kindergarten} />
-            <StatCard label="도서관" value={DUMMY_LIVE.library} />
-            <StatCard label="병원" value={DUMMY_LIVE.hospital} />
-            <StatCard label="약국" value={DUMMY_LIVE.pharmacy} />
-            <StatCard label="카페" value={DUMMY_LIVE.cafe} />
-            <StatCard label="편의점" value={DUMMY_LIVE.convenience} />
+          <div style={S.sectionTitle}>📊 건물 단면 시각화</div>
+          <BuildingStack floors={floors} selectedHo={data.hoNm} />
+          <div style={{textAlign:'center', marginTop:'12px', fontSize:'11px', color:'#aeaeb2'}}>
+            {floors.length > 10 ? "스크롤하여 전체 층을 확인할 수 있습니다." : "건물 전체 층 구성입니다."}
           </div>
         </div>
 
+        {/* 3. 건축물대장 상세정보 */}
+        <div style={S.section}>
+          <div style={S.sectionTitle}>📋 건축물대장 정보</div>
+          <div style={S.infoRow}><span style={S.label}>건물 주용도</span><span style={S.value}>{building?.purpose}</span></div>
+          <div style={S.infoRow}><span style={S.label}>연면적</span><span style={S.value}>{building?.area}</span></div>
+          <div style={S.infoRow}><span style={S.label}>규모</span><span style={S.value}>{building?.floors}</span></div>
+          <div style={S.infoRow}><span style={S.label}>준공일자</span><span style={S.value}>{building?.built}</span></div>
+          <div style={S.infoRow}><span style={S.label}>주차</span><span style={S.value}>{building?.parking}</span></div>
+          <div style={S.infoRow}><span style={S.label}>구조</span><span style={S.value}>{building?.structure}</span></div>
+        </div>
+
+        {/* 4. 기타 정보 (예정) */}
+        <div style={{...S.section, opacity: 0.6, background: '#f5f5f7', border: '1px dashed #d1d1d6'}}>
+          <div style={S.sectionTitle}>📍 주변 환경 분석</div>
+          <div style={{fontSize:'13px', textAlign:'center', padding:'20px 0'}}>
+            상권 및 인구 데이터 API 연동 준비 중
+          </div>
+        </div>
       </div>
     </div>
   )
