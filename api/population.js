@@ -12,7 +12,7 @@ const API_KEY = 'mX7nd4kSo5SUrlBEp4FVl2NqZIORFTqKdRXaY2Z2dGwTMIGpEkWDOlwl2YhJHZM
   })
   
   try {
-    const response = await fetch(`http://apis.data.go.kr/B553077/api/open/sdsc2/population/status?${params}`)
+    const response = await fetch(`https://apis.data.go.kr/B553077/api/open/sdsc2/population/status?${params}`)
     const text = await response.text()
     res.status(200).send(text)
   } catch (e) {
