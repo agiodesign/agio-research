@@ -25,7 +25,7 @@ const S = {
 
 const FEATURES = [
   { id:'building', label:'건축물대장', desc:'건물 구조, 층별 용도, 면적 정보' },
-  { id:'market', label:'상권분석 (지도 포함)', desc:'카카오맵 500m 반경과 실제 업소 데이터' },
+  { id:'market', label:'상권분석', desc:'중심 좌표 기준 500m 반경 실제 업소 데이터' },
   { id:'future', label:'추후 추가될 기능들...', desc:'새 분석 기능을 이 자리에 연결 예정', disabled:true },
 ]
 
@@ -66,17 +66,7 @@ export default function SearchPage({ onSearch }) {
         const sigunguCd = data.sigunguCode || (data.bcode ? data.bcode.substring(0, 5) : '')
         const bjdongCd = data.bcode ? data.bcode.substring(5, 10) : ''
 
-        try {
-          const geocoder = new window.kakao.maps.services.Geocoder()
-          geocoder.addressSearch(addr, (result, status) => {
-            const coords = status === window.kakao.maps.services.Status.OK
-              ? { lat: parseFloat(result[0].y), lon: parseFloat(result[0].x) }
-              : null
-            setJibunData({ sigunguCd, bjdongCd, bun, ji, bcode: data.bcode, coords })
-          })
-        } catch (e) {
-          setJibunData({ sigunguCd, bjdongCd, bun, ji, bcode: data.bcode, coords: null })
-        }
+        setJibunData({ sigunguCd, bjdongCd, bun, ji, bcode: data.bcode, coords: null })
       },
     }).open()
   }

@@ -91,7 +91,7 @@ function CategoryDetail({ cd, items }) {
   )
 }
 
-export default function PopulationAnalysis({ bjdongCode, coords }) {
+export default function PopulationAnalysis({ bjdongCode, coords, address }) {
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(false)
   const [selected, setSelected] = useState([])
@@ -100,10 +100,10 @@ export default function PopulationAnalysis({ bjdongCode, coords }) {
   useEffect(() => {
     if (!bjdongCode) return
     setLoading(true)
-    getStoreList(bjdongCode, coords)
+    getStoreList(bjdongCode, coords, address)
       .then(setData)
       .finally(() => setLoading(false))
-  }, [bjdongCode, coords])
+  }, [bjdongCode, coords, address])
 
   if (loading) return (
     <div style={{background:'#fff', borderRadius:'20px', padding:'24px', textAlign:'center', color:'#86868b', fontSize:'14px'}}>

@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
+import { getStoreSummary } from '../api/analysis'
 import { getBuildingInfo, getFloorInfo, getUnitInfo } from '../api/building'
-import { getPopulationSummary, renderKakaoRadiusMap } from '../api/kakaoMapService'
 import PopulationAnalysis from '../components/PopulationAnalysis'
 
 const S = {
@@ -12,8 +12,7 @@ const S = {
   body: { maxWidth:'500px', margin:'0 auto', padding:'16px', display:'flex', flexDirection:'column', gap:'12px' },
   section: { background:'#fff', borderRadius:'20px', padding:'20px', boxShadow:'0 1px 3px rgba(0,0,0,0.05)' },
   sectionTitle: { fontSize:'13px', fontWeight:'700', color:'#555', marginBottom:'16px', display:'flex', alignItems:'center', gap:'6px' },
-  mapBox: { width:'100%', height:'300px', minHeight:'300px', display:'block', flexShrink:0, borderRadius:'16px', overflow:'hidden', background:'#f5f5f7', border:'1px solid #e5e5e5' },
-  summaryGrid: { display:'grid', gridTemplateColumns:'repeat(3, 1fr)', gap:'8px', marginTop:'14px' },
+  summaryGrid: { display:'grid', gridTemplateColumns:'repeat(3, 1fr)', gap:'8px' },
   summaryItem: { background:'#f5f5f7', borderRadius:'12px', padding:'12px', minWidth:0 },
   summaryLabel: { fontSize:'11px', color:'#86868b', marginBottom:'4px', whiteSpace:'nowrap' },
   summaryValue: { fontSize:'15px', color:'#1d1d1f', fontWeight:'800', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' },
@@ -24,25 +23,7 @@ const S = {
   label: { color:'#86868b', fontSize:'14px' },
   value: { color:'#1d1d1f', fontSize:'14px', fontWeight:'600', textAlign:'right' },
   badge: { padding:'4px 10px', borderRadius:'8px', fontSize:'11px', fontWeight:'700', background:'#f5f5f7', color:'#48484a' },
-}
-
-function waitForKakaoBeforeRender(maxRetry = 5, delayMs = 500) {
-  return new Promise((resolve) => {
-    let retryCount = 0
-    const checkReady = () => {
-      if (window.kakao?.maps) {
-        resolve(true)
-        return
-      }
-      retryCount += 1
-      if (retryCount >= maxRetry) {
-        resolve(false)
-        return
-      }
-      setTimeout(checkReady, delayMs)
-    }
-    checkReady()
-  })
+  notice: { marginTop:'12px', fontSize:'12px', color:'#86868b', lineHeight:1.5 },
 }
 
 function BuildingStack({ floors, selectedHo }) {
@@ -84,7 +65,6 @@ function BuildingStack({ floors, selectedHo }) {
 }
 
 export default function ResultPage({ data, onBack }) {
-  const mapRef = useRef(null)
   const selectedFeatures = data.selectedFeatures || (data.mode ? [data.mode] : ['building'])
   const hasMarket = selectedFeatures.includes('market')
   const hasBuilding = selectedFeatures.includes('building')
@@ -93,26 +73,28 @@ export default function ResultPage({ data, onBack }) {
   const [floors, setFloors] = useState([])
   const [unit, setUnit] = useState(null)
   const [buildingLoading, setBuildingLoading] = useState(false)
-  const [populationSummary, setPopulationSummary] = useState(null)
-  const [recoveredCoords, setRecoveredCoords] = useState(null)
-  const effectiveCoords = recoveredCoords || data.jibunData?.coords
+  const [marketSummary, setMarketSummary] = useState(null)
+  const [marketLoading, setMarketLoading] = useState(false)
+  const marketCoords = marketSummary?.coords || data.jibunData?.coords
 
   useEffect(() => {
-    if (!hasMarket || !mapRef.current || !data.address) return
-    mapRef.current.style.setProperty('height', '300px', 'important')
-    mapRef.current.style.setProperty('min-height', '300px', 'important')
-    mapRef.current.style.setProperty('display', 'block', 'important')
-    waitForKakaoBeforeRender().then(() => {
-      renderKakaoRadiusMap(mapRef.current, data.jibunData?.coords, data.address).then((result) => {
-        if (result?.success && result.coords) setRecoveredCoords(result.coords)
-      })
-    })
+    if (!hasMarket || !data.jibunData?.bcode) return
+    async function loadMarket() {
+      try {
+        setMarketLoading(true)
+        const summary = await getStoreSummary(data.jibunData.bcode, data.jibunData?.coords, data.address)
+        if (summary?.radiusCount >= 1000) {
+          console.warn('반경 500m 업소 수가 1,000개 이상입니다. 서버 거리 필터와 좌표를 다시 확인하세요.', summary)
+        }
+        setMarketSummary(summary)
+      } catch (e) {
+        console.error(e)
+      } finally {
+        setMarketLoading(false)
+      }
+    }
+    loadMarket()
   }, [hasMarket, data])
-
-  useEffect(() => {
-    if (!hasMarket || !data.jibunData?.bcode || !effectiveCoords) return
-    getPopulationSummary(data.jibunData.bcode, effectiveCoords).then(setPopulationSummary)
-  }, [hasMarket, data.jibunData?.bcode, effectiveCoords])
 
   useEffect(() => {
     if (!hasBuilding) return
@@ -150,27 +132,29 @@ export default function ResultPage({ data, onBack }) {
       <div style={S.body}>
         {hasMarket && (
           <div style={S.section}>
-            <div style={S.sectionTitle}>상권분석 지도와 500m 반경 데이터</div>
-            <div ref={mapRef} style={S.mapBox} />
+            <div style={S.sectionTitle}>반경 500m 이내 핵심 분석 데이터</div>
             <div style={S.summaryGrid}>
               <div style={S.summaryItem}>
                 <div style={S.summaryLabel}>반경 내 업소</div>
-                <div style={S.summaryValue}>{populationSummary?.success ? `${populationSummary.radiusCount.toLocaleString()}개` : '-'}</div>
+                <div style={S.summaryValue}>{marketSummary?.success ? `${marketSummary.radiusCount.toLocaleString()}개` : '-'}</div>
               </div>
               <div style={S.summaryItem}>
                 <div style={S.summaryLabel}>법정동 업소</div>
-                <div style={S.summaryValue}>{populationSummary?.success ? `${populationSummary.totalCount.toLocaleString()}개` : '-'}</div>
+                <div style={S.summaryValue}>{marketSummary?.success ? `${marketSummary.totalCount.toLocaleString()}개` : '-'}</div>
               </div>
               <div style={S.summaryItem}>
                 <div style={S.summaryLabel}>최다 업종</div>
-                <div style={S.summaryValue}>{populationSummary?.success ? populationSummary.topCategoryName : '-'}</div>
+                <div style={S.summaryValue}>{marketSummary?.success ? marketSummary.topCategoryName : '-'}</div>
               </div>
+            </div>
+            <div style={S.notice}>
+              {marketLoading ? '상권 데이터를 계산하는 중입니다.' : '서버에서 중심 좌표 기준 500m를 초과한 업소는 리스트와 카운트에서 제외했습니다.'}
             </div>
           </div>
         )}
 
-        {hasMarket && data.jibunData?.bcode && effectiveCoords && (
-          <PopulationAnalysis bjdongCode={data.jibunData.bcode} coords={effectiveCoords} />
+        {hasMarket && data.jibunData?.bcode && marketCoords && (
+          <PopulationAnalysis bjdongCode={data.jibunData.bcode} coords={marketCoords} address={data.address} />
         )}
 
         {hasBuilding && (
