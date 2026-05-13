@@ -1,33 +1,29 @@
 import { useEffect, useRef, useState } from 'react'
 import { getBuildingInfo, getFloorInfo, getUnitInfo } from '../api/building'
 import { getPopulationSummary, renderKakaoRadiusMap } from '../api/kakaoMapService'
-import PopulationAnalysis from '../components/PopulationAnalysis';
+import PopulationAnalysis from '../components/PopulationAnalysis'
 
 const S = {
-  wrap: { minHeight:'100vh', background:'#f5f5f7', paddingBottom: '60px' },
-  header: { 
-    background:'rgba(255,255,255,0.8)', backdropFilter:'blur(10px)', 
-    borderBottom:'1px solid #e5e5e5', padding:'12px 20px', 
-    position: 'sticky', top: 0, zIndex: 100 
-  },
-  backBtn: { border:'none', background:'none', fontSize:'14px', color:'#007AFF', cursor:'pointer', padding: '8px 0', fontWeight: '500' },
+  wrap: { minHeight:'100vh', background:'#f5f5f7', paddingBottom:'60px' },
+  header: { background:'rgba(255,255,255,0.8)', backdropFilter:'blur(10px)', borderBottom:'1px solid #e5e5e5', padding:'12px 20px', position:'sticky', top:0, zIndex:100 },
+  backBtn: { border:'none', background:'none', fontSize:'14px', color:'#007AFF', cursor:'pointer', padding:'8px 0', fontWeight:'500' },
   headerTitle: { fontSize:'17px', fontWeight:'700', color:'#1d1d1f', letterSpacing:'-0.4px' },
-  modeBadge: { fontSize:'11px', fontWeight:'700', padding:'4px 10px', borderRadius:'8px', display:'inline-block', marginTop:'2px' },
+  modeBadge: { fontSize:'11px', fontWeight:'700', padding:'4px 10px', borderRadius:'8px', display:'inline-block', marginTop:'2px', background:'#eef2ff', color:'#3730a3' },
   body: { maxWidth:'500px', margin:'0 auto', padding:'16px', display:'flex', flexDirection:'column', gap:'12px' },
-  unitCard: { background:'#1d1d1f', borderRadius:'20px', padding:'24px', color:'#fff', boxShadow: '0 10px 20px rgba(0,0,0,0.1)', display:'flex', flexDirection:'column', gap:'12px' },
   section: { background:'#fff', borderRadius:'20px', padding:'20px', boxShadow:'0 1px 3px rgba(0,0,0,0.05)' },
-  sectionTitle: { fontSize:'13px', fontWeight:'600', color:'#86868b', marginBottom:'16px', display: 'flex', alignItems: 'center', gap: '6px' },
+  sectionTitle: { fontSize:'13px', fontWeight:'700', color:'#555', marginBottom:'16px', display:'flex', alignItems:'center', gap:'6px' },
   mapBox: { width:'100%', height:'300px', minHeight:'300px', display:'block', flexShrink:0, borderRadius:'16px', overflow:'hidden', background:'#f5f5f7', border:'1px solid #e5e5e5' },
   summaryGrid: { display:'grid', gridTemplateColumns:'repeat(3, 1fr)', gap:'8px', marginTop:'14px' },
   summaryItem: { background:'#f5f5f7', borderRadius:'12px', padding:'12px', minWidth:0 },
   summaryLabel: { fontSize:'11px', color:'#86868b', marginBottom:'4px', whiteSpace:'nowrap' },
   summaryValue: { fontSize:'15px', color:'#1d1d1f', fontWeight:'800', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' },
-  stackContainer: { display: 'flex', flexDirection: 'column-reverse', gap: '4px', background: '#f5f5f7', padding: '10px', borderRadius: '14px', maxHeight: '420px', overflowY: 'auto', WebkitOverflowScrolling: 'touch' },
-  stackLevel: { minHeight: '38px', display: 'flex', alignItems: 'center', padding: '0 12px', borderRadius: '8px', fontSize: '12px', fontWeight: '500', transition: 'all 0.3s ease' },
-  infoRow: { display:'flex', justifyContent:'space-between', padding:'12px 0', borderBottom:'1px solid #f5f5f7' },
-  label: { color: '#86868b', fontSize: '14px' },
-  value: { color: '#1d1d1f', fontSize: '14px', fontWeight: '600' },
-  badge: { padding:'4px 10px', borderRadius:'8px', fontSize:'11px', fontWeight:'700', background:'#f5f5f7', color:'#48484a' }
+  unitCard: { background:'#1d1d1f', borderRadius:'20px', padding:'24px', color:'#fff', boxShadow:'0 10px 20px rgba(0,0,0,0.1)', display:'flex', flexDirection:'column', gap:'12px' },
+  stackContainer: { display:'flex', flexDirection:'column', gap:'4px', background:'#f5f5f7', padding:'10px', borderRadius:'14px', maxHeight:'420px', overflowY:'auto', WebkitOverflowScrolling:'touch' },
+  stackLevel: { minHeight:'38px', display:'flex', alignItems:'center', padding:'0 12px', borderRadius:'8px', fontSize:'12px', fontWeight:'500', transition:'all 0.3s ease' },
+  infoRow: { display:'flex', justifyContent:'space-between', gap:'14px', padding:'12px 0', borderBottom:'1px solid #f5f5f7' },
+  label: { color:'#86868b', fontSize:'14px' },
+  value: { color:'#1d1d1f', fontSize:'14px', fontWeight:'600', textAlign:'right' },
+  badge: { padding:'4px 10px', borderRadius:'8px', fontSize:'11px', fontWeight:'700', background:'#f5f5f7', color:'#48484a' },
 }
 
 function waitForKakaoBeforeRender(maxRetry = 5, delayMs = 500) {
@@ -50,31 +46,36 @@ function waitForKakaoBeforeRender(maxRetry = 5, delayMs = 500) {
 }
 
 function BuildingStack({ floors, selectedHo }) {
-  const targetFloorNm = selectedHo ? (selectedHo.length >= 3 ? selectedHo.slice(0, -2) : selectedHo.charAt(0)) : null;
+  const targetFloorNm = selectedHo ? (selectedHo.length >= 3 ? selectedHo.slice(0, -2) : selectedHo.charAt(0)) : null
   const sortedFloors = [...floors].sort((a, b) => {
     const getLevel = (name) => {
-      if (name.includes('지') || name.includes('B')) { const num = name.replace(/[^0-9]/g, ''); return -parseInt(num || 1); }
-      return parseInt(name.replace(/[^0-9]/g, '') || 0);
-    };
-    return getLevel(b.floor) - getLevel(a.floor);
-  });
+      if (name.includes('지') || name.includes('B')) {
+        const num = name.replace(/[^0-9]/g, '')
+        return -parseInt(num || 1)
+      }
+      return parseInt(name.replace(/[^0-9]/g, '') || 0)
+    }
+    return getLevel(b.floor) - getLevel(a.floor)
+  })
+
   useEffect(() => {
-    const target = document.getElementById('active-floor');
-    if (target) target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  }, [floors, selectedHo]);
+    const target = document.getElementById('active-floor')
+    if (target) target.scrollIntoView({ behavior:'smooth', block:'center' })
+  }, [floors, selectedHo])
+
   return (
-    <div style={{...S.stackContainer, flexDirection: 'column', display: 'flex'}}>
+    <div style={S.stackContainer}>
       {sortedFloors.map((f, i) => {
-        const isTarget = targetFloorNm && f.floor.includes(targetFloorNm);
-        const isBasement = f.floor.includes('지') || f.floor.includes('B');
+        const isTarget = targetFloorNm && f.floor.includes(targetFloorNm)
+        const isBasement = f.floor.includes('지') || f.floor.includes('B')
         return (
-          <div key={i} id={isTarget ? "active-floor" : undefined} style={{...S.stackLevel, background: isTarget ? '#007AFF' : '#fff', color: isTarget ? '#fff' : '#1d1d1f', border: isTarget ? 'none' : '1px solid #e5e5e5', boxShadow: isTarget ? '0 4px 12px rgba(0, 122, 255, 0.3)' : 'none', opacity: isBasement && !isTarget ? 0.6 : 1, flexShrink: 0, display: 'flex', justifyContent: 'space-between', padding: '0 16px', marginBottom: '4px'}}>
-            <span style={{ width: '40px', fontWeight: '700', fontSize:'11px' }}>{f.floor}</span>
-            <div style={{ flex: 1, textAlign: 'left', paddingLeft: '12px', overflow: 'hidden', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <span style={{ fontSize: '9px', fontWeight: '800', background: isTarget ? 'rgba(255,255,255,0.2)' : '#f1f3f5', padding: '2px 5px', borderRadius: '4px', whiteSpace: 'nowrap' }}>{f.purpose}</span>
-              <span style={{ fontSize: '11px', opacity: isTarget ? 0.9 : 0.6, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{f.detailPurpose}</span>
+          <div key={i} id={isTarget ? 'active-floor' : undefined} style={{...S.stackLevel, background:isTarget ? '#007AFF' : '#fff', color:isTarget ? '#fff' : '#1d1d1f', border:isTarget ? 'none' : '1px solid #e5e5e5', boxShadow:isTarget ? '0 4px 12px rgba(0, 122, 255, 0.3)' : 'none', opacity:isBasement && !isTarget ? 0.6 : 1, flexShrink:0, display:'flex', justifyContent:'space-between', padding:'0 16px', marginBottom:'4px'}}>
+            <span style={{ width:'40px', fontWeight:'700', fontSize:'11px' }}>{f.floor}</span>
+            <div style={{ flex:1, textAlign:'left', paddingLeft:'12px', overflow:'hidden', display:'flex', alignItems:'center', gap:'6px' }}>
+              <span style={{ fontSize:'9px', fontWeight:'800', background:isTarget ? 'rgba(255,255,255,0.2)' : '#f1f3f5', padding:'2px 5px', borderRadius:'4px', whiteSpace:'nowrap' }}>{f.purpose}</span>
+              <span style={{ fontSize:'11px', opacity:isTarget ? 0.9 : 0.6, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{f.detailPurpose}</span>
             </div>
-            <span style={{ fontSize: '11px', fontWeight: '700', color: isTarget ? '#fff' : '#007AFF', marginLeft: '8px' }}>{f.area}</span>
+            <span style={{ fontSize:'11px', fontWeight:'700', color:isTarget ? '#fff' : '#007AFF', marginLeft:'8px' }}>{f.area}</span>
           </div>
         )
       })}
@@ -84,16 +85,20 @@ function BuildingStack({ floors, selectedHo }) {
 
 export default function ResultPage({ data, onBack }) {
   const mapRef = useRef(null)
+  const selectedFeatures = data.selectedFeatures || (data.mode ? [data.mode] : ['building'])
+  const hasMarket = selectedFeatures.includes('market')
+  const hasBuilding = selectedFeatures.includes('building')
+
   const [building, setBuilding] = useState(null)
   const [floors, setFloors] = useState([])
   const [unit, setUnit] = useState(null)
-  const [loading, setLoading] = useState(false)
+  const [buildingLoading, setBuildingLoading] = useState(false)
   const [populationSummary, setPopulationSummary] = useState(null)
   const [recoveredCoords, setRecoveredCoords] = useState(null)
-  const isBuilding = data.mode === 'building' || !data.mode
+  const effectiveCoords = recoveredCoords || data.jibunData?.coords
 
   useEffect(() => {
-    if (!mapRef.current || !data.address) return
+    if (!hasMarket || !mapRef.current || !data.address) return
     mapRef.current.style.setProperty('height', '300px', 'important')
     mapRef.current.style.setProperty('min-height', '300px', 'important')
     mapRef.current.style.setProperty('display', 'block', 'important')
@@ -102,18 +107,18 @@ export default function ResultPage({ data, onBack }) {
         if (result?.success && result.coords) setRecoveredCoords(result.coords)
       })
     })
-  }, [data])
+  }, [hasMarket, data])
 
   useEffect(() => {
-    if (!data.jibunData?.bcode) return
-    getPopulationSummary(data.jibunData.bcode, recoveredCoords || data.jibunData?.coords).then(setPopulationSummary)
-  }, [data, recoveredCoords])
+    if (!hasMarket || !data.jibunData?.bcode || !effectiveCoords) return
+    getPopulationSummary(data.jibunData.bcode, effectiveCoords).then(setPopulationSummary)
+  }, [hasMarket, data.jibunData?.bcode, effectiveCoords])
 
   useEffect(() => {
-    if (!isBuilding) return
-    async function load() {
+    if (!hasBuilding) return
+    async function loadBuilding() {
       try {
-        setLoading(true)
+        setBuildingLoading(true)
         const jibun = data.jibunData
         const [bInfo, fInfo] = await Promise.all([
           getBuildingInfo(jibun),
@@ -128,27 +133,24 @@ export default function ResultPage({ data, onBack }) {
       } catch (e) {
         console.error(e)
       } finally {
-        setLoading(false)
+        setBuildingLoading(false)
       }
     }
-    load()
-  }, [data])
-
+    loadBuilding()
+  }, [hasBuilding, data])
 
   return (
     <div style={S.wrap}>
       <div style={S.header}>
-        <button style={S.backBtn} onClick={onBack}>〈 뒤로가기</button>
+        <button style={S.backBtn} onClick={onBack}>뒤로가기</button>
         <div style={S.headerTitle}>{data.address}</div>
-        <span style={{...S.modeBadge, background: isBuilding ? '#e8f0fe' : '#e8f8e8', color: isBuilding ? '#1a56db' : '#1a8a1a'}}>
-          {isBuilding ? '🏢 건축물대장' : '📊 상권분석'}
-        </span>
+        <span style={S.modeBadge}>통합 분석</span>
       </div>
 
       <div style={S.body}>
-        {data.address && (
+        {hasMarket && (
           <div style={S.section}>
-            <div style={S.sectionTitle}>카카오맵 반경 500m</div>
+            <div style={S.sectionTitle}>상권분석 지도와 500m 반경 데이터</div>
             <div ref={mapRef} style={S.mapBox} />
             <div style={S.summaryGrid}>
               <div style={S.summaryItem}>
@@ -156,7 +158,7 @@ export default function ResultPage({ data, onBack }) {
                 <div style={S.summaryValue}>{populationSummary?.success ? `${populationSummary.radiusCount.toLocaleString()}개` : '-'}</div>
               </div>
               <div style={S.summaryItem}>
-                <div style={S.summaryLabel}>법정동 전체</div>
+                <div style={S.summaryLabel}>법정동 업소</div>
                 <div style={S.summaryValue}>{populationSummary?.success ? `${populationSummary.totalCount.toLocaleString()}개` : '-'}</div>
               </div>
               <div style={S.summaryItem}>
@@ -167,17 +169,21 @@ export default function ResultPage({ data, onBack }) {
           </div>
         )}
 
-        {isBuilding && (
+        {hasMarket && data.jibunData?.bcode && effectiveCoords && (
+          <PopulationAnalysis bjdongCode={data.jibunData.bcode} coords={effectiveCoords} />
+        )}
+
+        {hasBuilding && (
           <>
-            {loading ? (
+            {buildingLoading ? (
               <div style={{...S.section, textAlign:'center', color:'#86868b', fontSize:'14px'}}>
-                데이터를 불러오는 중입니다.
+                건축물대장 데이터를 불러오는 중입니다.
               </div>
             ) : unit ? (
               <div style={S.unitCard}>
                 <div style={{display:'flex', justifyContent:'space-between', alignItems:'flex-start'}}>
                   <div>
-                    <div style={{fontSize:'14px', opacity:0.8, marginBottom:'4px'}}>{unit.hoNm}호 상세정보</div>
+                    <div style={{fontSize:'14px', opacity:0.8, marginBottom:'4px'}}>{unit.hoNm} 상세정보</div>
                     <div style={{fontSize:'36px', fontWeight:'800', letterSpacing:'-1px'}}>{unit.area}</div>
                   </div>
                   <div style={S.badge}>{unit.purpose}</div>
@@ -188,29 +194,25 @@ export default function ResultPage({ data, onBack }) {
               </div>
             ) : (
               <div style={{...S.section, textAlign:'center', color:'#86868b', fontSize:'14px'}}>
-                호실 정보를 입력하시면 전용면적을 확인할 수 있습니다.
+                호실 정보를 입력하면 전용면적을 확인할 수 있습니다.
               </div>
             )}
 
             <div style={S.section}>
-              <div style={S.sectionTitle}>📊 건물 단면 시각화</div>
-              <BuildingStack floors={floors} selectedHo={data.hoNm} />
+              <div style={S.sectionTitle}>건축물대장 정보</div>
+              <div style={S.infoRow}><span style={S.label}>건물 주용도</span><span style={S.value}>{building?.purpose || '-'}</span></div>
+              <div style={S.infoRow}><span style={S.label}>연면적</span><span style={S.value}>{building?.area || '-'}</span></div>
+              <div style={S.infoRow}><span style={S.label}>규모</span><span style={S.value}>{building?.floors || '-'}</span></div>
+              <div style={S.infoRow}><span style={S.label}>준공일자</span><span style={S.value}>{building?.built || '-'}</span></div>
+              <div style={S.infoRow}><span style={S.label}>주차</span><span style={S.value}>{building?.parking || '-'}</span></div>
+              <div style={S.infoRow}><span style={S.label}>구조</span><span style={S.value}>{building?.structure || '-'}</span></div>
             </div>
 
             <div style={S.section}>
-              <div style={S.sectionTitle}>📋 건축물대장 정보</div>
-              <div style={S.infoRow}><span style={S.label}>건물 주용도</span><span style={S.value}>{building?.purpose}</span></div>
-              <div style={S.infoRow}><span style={S.label}>연면적</span><span style={S.value}>{building?.area}</span></div>
-              <div style={S.infoRow}><span style={S.label}>규모</span><span style={S.value}>{building?.floors}</span></div>
-              <div style={S.infoRow}><span style={S.label}>준공일자</span><span style={S.value}>{building?.built}</span></div>
-              <div style={S.infoRow}><span style={S.label}>주차</span><span style={S.value}>{building?.parking}</span></div>
-              <div style={S.infoRow}><span style={S.label}>구조</span><span style={S.value}>{building?.structure}</span></div>
+              <div style={S.sectionTitle}>층별 용도와 면적</div>
+              <BuildingStack floors={floors} selectedHo={data.hoNm} />
             </div>
           </>
-        )}
-
-        {!isBuilding && (
-          <PopulationAnalysis bjdongCode={data.jibunData?.bcode} coords={data.jibunData?.coords} />
         )}
       </div>
     </div>

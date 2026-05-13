@@ -4,7 +4,7 @@ const S = {
   wrap: { minHeight:'100vh', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:'40px 20px', background:'#f5f5f3' },
   logo: { fontSize:'13px', fontWeight:'600', letterSpacing:'0.25em', color:'#888', marginBottom:'12px' },
   title: { fontSize:'28px', fontWeight:'700', color:'#1a1a1a', marginBottom:'6px' },
-  sub: { fontSize:'14px', color:'#888', marginBottom:'32px' },
+  sub: { fontSize:'14px', color:'#888', marginBottom:'32px', textAlign:'center' },
   card: { background:'#fff', borderRadius:'16px', padding:'36px', width:'100%', maxWidth:'520px', boxShadow:'0 2px 20px rgba(0,0,0,0.06)' },
   label: { fontSize:'12px', fontWeight:'600', color:'#888', letterSpacing:'0.08em', marginBottom:'8px', display:'block' },
   addrRow: { display:'flex', gap:'8px', marginBottom:'12px' },
@@ -13,17 +13,24 @@ const S = {
   input: { width:'100%', padding:'12px 14px', border:'1.5px solid #e8e8e8', borderRadius:'10px', fontSize:'14px', outline:'none', background:'#fafafa', marginBottom:'12px', boxSizing:'border-box' },
   row2: { display:'grid', gridTemplateColumns:'1fr 1fr', gap:'10px', marginBottom:'12px' },
   divider: { height:'1px', background:'#f0f0f0', margin:'20px 0' },
+  checkGroup: { display:'flex', flexDirection:'column', gap:'10px', marginBottom:'18px' },
+  checkItem: { display:'flex', alignItems:'center', gap:'10px', padding:'12px 14px', border:'1.5px solid #e8e8e8', borderRadius:'10px', background:'#fafafa', cursor:'pointer' },
+  checkItemOff: { display:'flex', alignItems:'center', gap:'10px', padding:'12px 14px', border:'1.5px solid #ededed', borderRadius:'10px', background:'#f7f7f7', color:'#aaa', cursor:'not-allowed' },
+  checkText: { display:'flex', flexDirection:'column', gap:'2px' },
+  checkTitle: { fontSize:'14px', fontWeight:'700', color:'#1a1a1a' },
+  checkDesc: { fontSize:'12px', color:'#888' },
   submitBtn: { width:'100%', padding:'14px', background:'#1a1a1a', color:'#fff', border:'none', borderRadius:'10px', fontSize:'15px', fontWeight:'700', cursor:'pointer' },
   submitBtnOff: { width:'100%', padding:'14px', background:'#d0d0d0', color:'#fff', border:'none', borderRadius:'10px', fontSize:'15px', fontWeight:'700', cursor:'not-allowed' },
 }
 
-const MODES = [
-  { id:'building', icon:'🏢', label:'건축물대장', desc:'건물구조·층별용도·면적' },
-  { id:'market',   icon:'📊', label:'상권분석',   desc:'업종현황·교육·의료' },
+const FEATURES = [
+  { id:'building', label:'건축물대장', desc:'건물 구조, 층별 용도, 면적 정보' },
+  { id:'market', label:'상권분석 (지도 포함)', desc:'카카오맵 500m 반경과 실제 업소 데이터' },
+  { id:'future', label:'추후 추가될 기능들...', desc:'새 분석 기능을 이 자리에 연결 예정', disabled:true },
 ]
 
 export default function SearchPage({ onSearch }) {
-  const [mode, setMode] = useState('building')
+  const [selectedFeatures, setSelectedFeatures] = useState(['building'])
   const [address, setAddress] = useState('')
   const [jibunData, setJibunData] = useState(null)
   const [hoNm, setHoNm] = useState('')
@@ -31,12 +38,25 @@ export default function SearchPage({ onSearch }) {
   const [client, setClient] = useState('')
   const [site, setSite] = useState('')
 
+  const hasBuilding = selectedFeatures.includes('building')
+  const canSubmit = address && selectedFeatures.length > 0
+
+  const toggleFeature = (feature) => {
+    if (feature.disabled) return
+    setSelectedFeatures((prev) =>
+      prev.includes(feature.id)
+        ? prev.filter((id) => id !== feature.id)
+        : [...prev, feature.id]
+    )
+  }
+
   const openAddr = () => {
     new window.daum.Postcode({
       oncomplete: (data) => {
         const addr = data.roadAddress || data.jibunAddress
         setAddress(addr)
         setHoNm('')
+
         const jibun = data.jibunAddress || ''
         const parts = jibun.trim().split(' ')
         const bunjiStr = parts[parts.length - 1] || '0'
@@ -46,7 +66,6 @@ export default function SearchPage({ onSearch }) {
         const sigunguCd = data.sigunguCode || (data.bcode ? data.bcode.substring(0, 5) : '')
         const bjdongCd = data.bcode ? data.bcode.substring(5, 10) : ''
 
-        // 카카오 지오코더로 좌표 변환
         try {
           const geocoder = new window.kakao.maps.services.Geocoder()
           geocoder.addressSearch(addr, (result, status) => {
@@ -55,7 +74,7 @@ export default function SearchPage({ onSearch }) {
               : null
             setJibunData({ sigunguCd, bjdongCd, bun, ji, bcode: data.bcode, coords })
           })
-        } catch(e) {
+        } catch (e) {
           setJibunData({ sigunguCd, bjdongCd, bun, ji, bcode: data.bcode, coords: null })
         }
       },
@@ -63,46 +82,45 @@ export default function SearchPage({ onSearch }) {
   }
 
   const handleSubmit = () => {
-    if (!address) return
-    onSearch({ address, detail, client, site, hoNm, jibunData, mode })
+    if (!canSubmit) return
+    onSearch({ address, detail, client, site, hoNm, jibunData, selectedFeatures })
   }
 
   return (
     <div style={S.wrap}>
       <div style={S.logo}>AGIO DESIGN</div>
-      <div style={S.title}>상권 분석 리서치</div>
-      <div style={S.sub}>주소를 입력하면 건물정보 인구 교육환경을 한번에 분석해드립니다</div>
-
-      {/* 모드 선택 */}
-      <div style={{display:'flex', gap:'10px', marginBottom:'20px', width:'100%', maxWidth:'520px'}}>
-        {MODES.map(tab => (
-          <button
-            key={tab.id}
-            onClick={() => setMode(tab.id)}
-            style={{
-              flex:1, padding:'16px 12px', borderRadius:'16px', border:'none', cursor:'pointer',
-              background: mode === tab.id ? '#1a1a1a' : '#fff',
-              color: mode === tab.id ? '#fff' : '#1a1a1a',
-              boxShadow: mode === tab.id ? '0 4px 12px rgba(0,0,0,0.15)' : '0 1px 4px rgba(0,0,0,0.08)',
-              transition: 'all 0.2s',
-              textAlign: 'center',
-            }}
-          >
-            <div style={{fontSize:'18px', marginBottom:'4px'}}>{tab.icon}</div>
-            <div style={{fontSize:'14px', fontWeight:'700', marginBottom:'2px'}}>{tab.label}</div>
-            <div style={{fontSize:'11px', opacity:0.6}}>{tab.desc}</div>
-          </button>
-        ))}
-      </div>
+      <div style={S.title}>통합 분석 리서치</div>
+      <div style={S.sub}>필요한 정보만 선택해서 빠르게 분석합니다</div>
 
       <div style={S.card}>
+        <span style={S.label}>분석 항목 선택</span>
+        <div style={S.checkGroup}>
+          {FEATURES.map((feature) => {
+            const checked = selectedFeatures.includes(feature.id)
+            return (
+              <label key={feature.id} style={feature.disabled ? S.checkItemOff : S.checkItem}>
+                <input
+                  type="checkbox"
+                  checked={checked}
+                  disabled={feature.disabled}
+                  onChange={() => toggleFeature(feature)}
+                />
+                <span style={S.checkText}>
+                  <span style={S.checkTitle}>{feature.label}</span>
+                  <span style={S.checkDesc}>{feature.desc}</span>
+                </span>
+              </label>
+            )
+          })}
+        </div>
+
         <span style={S.label}>조사 주소</span>
         <div style={S.addrRow}>
           <input style={S.addrInput} value={address} readOnly placeholder="주소 검색 버튼을 눌러주세요" />
           <button style={S.addrBtn} onClick={openAddr}>주소 검색</button>
         </div>
 
-        {mode === 'building' && (
+        {hasBuilding && (
           <div style={S.row2}>
             <div>
               <span style={S.label}>층 / 호실</span>
@@ -127,8 +145,8 @@ export default function SearchPage({ onSearch }) {
           </div>
         </div>
         <div style={{height:'20px'}} />
-        <button style={address ? S.submitBtn : S.submitBtnOff} onClick={handleSubmit} disabled={!address}>
-          분석 시작
+        <button style={canSubmit ? S.submitBtn : S.submitBtnOff} onClick={handleSubmit} disabled={!canSubmit}>
+          통합 분석 시작
         </button>
       </div>
     </div>
