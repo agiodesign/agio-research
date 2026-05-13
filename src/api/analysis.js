@@ -1,20 +1,38 @@
-const buildPopulationParams = (bcode, coords, address) => {
-  const signguCd = bcode.substring(0, 5)
-  const ldongCd = bcode
-  const params = new URLSearchParams({ signguCd, ldongCd, radius: '500' })
+const normalizeAreaData = (areaData) => {
+  if (typeof areaData === 'string') {
+    return {
+      bcode: areaData,
+      ldongCd: areaData,
+      sigunguCd: areaData.substring(0, 5),
+    }
+  }
+
+  const bcode = areaData?.bcode || ''
+  return {
+    bcode,
+    ldongCd: bcode,
+    sigunguCd: areaData?.sigunguCd || (bcode ? bcode.substring(0, 5) : ''),
+  }
+}
+
+const buildPopulationParams = (areaData, coords, address) => {
+  const area = normalizeAreaData(areaData)
+  const params = new URLSearchParams({ radius: '500' })
+
+  if (area.sigunguCd) params.set('signguCd', area.sigunguCd)
+  if (area.ldongCd) params.set('ldongCd', area.ldongCd)
   if (coords?.lat && coords?.lon) {
     params.set('lat', coords.lat)
     params.set('lon', coords.lon)
   }
-  if (address) {
-    params.set('address', address)
-  }
+  if (address) params.set('address', address)
+
   return params
 }
 
-export const getStoreList = async (bcode, coords, address) => {
+export const getStoreList = async (areaData, coords, address) => {
   try {
-    const params = buildPopulationParams(bcode, coords, address)
+    const params = buildPopulationParams(areaData, coords, address)
     const response = await fetch(`/api/population?${params}`)
     return await response.json()
   } catch (error) {
@@ -23,9 +41,9 @@ export const getStoreList = async (bcode, coords, address) => {
   }
 }
 
-export const getStoreSummary = async (bcode, coords, address) => {
+export const getStoreSummary = async (areaData, coords, address) => {
   try {
-    const params = buildPopulationParams(bcode, coords, address)
+    const params = buildPopulationParams(areaData, coords, address)
     const response = await fetch(`/api/population?${params}`)
     const data = await response.json()
     const items = Array.isArray(data?.items) ? data.items : []

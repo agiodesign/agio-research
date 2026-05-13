@@ -91,19 +91,19 @@ function CategoryDetail({ cd, items }) {
   )
 }
 
-export default function PopulationAnalysis({ bjdongCode, coords, address }) {
+export default function PopulationAnalysis({ bjdongCode, areaData, coords, address }) {
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(false)
   const [selected, setSelected] = useState([])
   const RADIUS = 500
 
   useEffect(() => {
-    if (!bjdongCode) return
+    if (!areaData && !bjdongCode) return
     setLoading(true)
-    getStoreList(bjdongCode, coords, address)
+    getStoreList(areaData || bjdongCode, coords, address)
       .then(setData)
       .finally(() => setLoading(false))
-  }, [bjdongCode, coords, address])
+  }, [bjdongCode, areaData, coords, address])
 
   if (loading) return (
     <div style={{background:'#fff', borderRadius:'20px', padding:'24px', textAlign:'center', color:'#86868b', fontSize:'14px'}}>

@@ -37,9 +37,10 @@ export default function SearchPage({ onSearch }) {
   const [detail, setDetail] = useState('')
   const [client, setClient] = useState('')
   const [site, setSite] = useState('')
+  const [addressLoading, setAddressLoading] = useState(false)
 
   const hasBuilding = selectedFeatures.includes('building')
-  const canSubmit = address && selectedFeatures.length > 0
+  const canSubmit = address && jibunData && selectedFeatures.length > 0 && !addressLoading
 
   const toggleFeature = (feature) => {
     if (feature.disabled) return
@@ -56,6 +57,8 @@ export default function SearchPage({ onSearch }) {
         const addr = data.roadAddress || data.jibunAddress
         setAddress(addr)
         setHoNm('')
+        setJibunData(null)
+        setAddressLoading(true)
 
         const jibun = data.jibunAddress || ''
         const parts = jibun.trim().split(' ')
@@ -63,8 +66,9 @@ export default function SearchPage({ onSearch }) {
         const bunjiArr = bunjiStr.split('-')
         const bun = bunjiArr[0] || '0'
         const ji = bunjiArr[1] || '0'
-        const sigunguCd = data.sigunguCode || (data.bcode ? data.bcode.substring(0, 5) : '')
-        const bjdongCd = data.bcode ? data.bcode.substring(5, 10) : ''
+        const bcode = data.bcode || ''
+        const sigunguCd = data.sigunguCode || (bcode ? bcode.substring(0, 5) : '')
+        const bjdongCd = bcode ? bcode.substring(5, 10) : ''
 
         let coords = null
         try {
@@ -75,7 +79,8 @@ export default function SearchPage({ onSearch }) {
           console.error('주소 좌표 변환 실패:', e)
         }
 
-        setJibunData({ sigunguCd, bjdongCd, bun, ji, bcode: data.bcode, coords })
+        setJibunData({ sigunguCd, bjdongCd, bun, ji, bcode, coords })
+        setAddressLoading(false)
       },
     }).open()
   }

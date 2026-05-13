@@ -72,11 +72,11 @@ export default function ResultPage({ data, onBack }) {
   const marketCoords = marketSummary?.coords || data.jibunData?.coords
 
   useEffect(() => {
-    if (!hasMarket || !data.jibunData?.bcode) return
+    if (!hasMarket || !data.jibunData?.sigunguCd) return
     async function loadMarket() {
       try {
         setMarketLoading(true)
-        const summary = await getStoreSummary(data.jibunData.bcode, data.jibunData?.coords, data.address)
+        const summary = await getStoreSummary(data.jibunData, data.jibunData?.coords, data.address)
         if (summary?.radiusCount >= 1000) {
           console.warn('반경 500m 업소 수가 1,000개 이상입니다. 서버 거리 필터와 좌표를 다시 확인하세요.', summary)
         }
@@ -147,8 +147,8 @@ export default function ResultPage({ data, onBack }) {
           </div>
         )}
 
-        {hasMarket && data.jibunData?.bcode && marketCoords && (
-          <PopulationAnalysis bjdongCode={data.jibunData.bcode} coords={marketCoords} address={data.address} />
+        {hasMarket && data.jibunData?.sigunguCd && marketCoords && (
+          <PopulationAnalysis bjdongCode={data.jibunData.bcode} areaData={data.jibunData} coords={marketCoords} address={data.address} />
         )}
 
         {hasBuilding && (
