@@ -17,7 +17,7 @@ const S = {
   unitCard: { background:'#1d1d1f', borderRadius:'20px', padding:'24px', color:'#fff', boxShadow: '0 10px 20px rgba(0,0,0,0.1)', display:'flex', flexDirection:'column', gap:'12px' },
   section: { background:'#fff', borderRadius:'20px', padding:'20px', boxShadow:'0 1px 3px rgba(0,0,0,0.05)' },
   sectionTitle: { fontSize:'13px', fontWeight:'600', color:'#86868b', marginBottom:'16px', display: 'flex', alignItems: 'center', gap: '6px' },
-  mapBox: { width:'100%', height:'260px', borderRadius:'16px', overflow:'hidden', background:'#f5f5f7', border:'1px solid #e5e5e5' },
+  mapBox: { width:'100%', height:'300px', minHeight:'300px', display:'block', flexShrink:0, borderRadius:'16px', overflow:'hidden', background:'#f5f5f7', border:'1px solid #e5e5e5' },
   summaryGrid: { display:'grid', gridTemplateColumns:'repeat(3, 1fr)', gap:'8px', marginTop:'14px' },
   summaryItem: { background:'#f5f5f7', borderRadius:'12px', padding:'12px', minWidth:0 },
   summaryLabel: { fontSize:'11px', color:'#86868b', marginBottom:'4px', whiteSpace:'nowrap' },
@@ -70,17 +70,23 @@ export default function ResultPage({ data, onBack }) {
   const [unit, setUnit] = useState(null)
   const [loading, setLoading] = useState(false)
   const [populationSummary, setPopulationSummary] = useState(null)
+  const [recoveredCoords, setRecoveredCoords] = useState(null)
   const isBuilding = data.mode === 'building' || !data.mode
 
   useEffect(() => {
-    if (!mapRef.current || !data.jibunData?.coords) return
-    renderKakaoRadiusMap(mapRef.current, data.jibunData.coords, data.address)
+    if (!mapRef.current || !data.address) return
+    mapRef.current.style.setProperty('height', '300px', 'important')
+    mapRef.current.style.setProperty('min-height', '300px', 'important')
+    mapRef.current.style.setProperty('display', 'block', 'important')
+    renderKakaoRadiusMap(mapRef.current, data.jibunData?.coords, data.address).then((result) => {
+      if (result?.success && result.coords) setRecoveredCoords(result.coords)
+    })
   }, [data])
 
   useEffect(() => {
     if (!data.jibunData?.bcode) return
-    getPopulationSummary(data.jibunData.bcode, data.jibunData?.coords).then(setPopulationSummary)
-  }, [data])
+    getPopulationSummary(data.jibunData.bcode, recoveredCoords || data.jibunData?.coords).then(setPopulationSummary)
+  }, [data, recoveredCoords])
 
   useEffect(() => {
     if (!isBuilding) return
@@ -107,11 +113,6 @@ export default function ResultPage({ data, onBack }) {
     load()
   }, [data])
 
-  if (loading) return (
-    <div style={{...S.wrap, display:'flex', alignItems:'center', justifyContent:'center', color:'#86868b'}}>
-      데이터를 불러오는 중...
-    </div>
-  )
 
   return (
     <div style={S.wrap}>
@@ -124,7 +125,7 @@ export default function ResultPage({ data, onBack }) {
       </div>
 
       <div style={S.body}>
-        {data.jibunData?.coords && (
+        {data.address && (
           <div style={S.section}>
             <div style={S.sectionTitle}>카카오맵 반경 500m</div>
             <div ref={mapRef} style={S.mapBox} />
@@ -147,7 +148,11 @@ export default function ResultPage({ data, onBack }) {
 
         {isBuilding && (
           <>
-            {unit ? (
+            {loading ? (
+              <div style={{...S.section, textAlign:'center', color:'#86868b', fontSize:'14px'}}>
+                데이터를 불러오는 중입니다.
+              </div>
+            ) : unit ? (
               <div style={S.unitCard}>
                 <div style={{display:'flex', justifyContent:'space-between', alignItems:'flex-start'}}>
                   <div>
