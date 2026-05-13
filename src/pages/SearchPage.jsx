@@ -52,7 +52,7 @@ export default function SearchPage({ onSearch }) {
 
   const openAddr = () => {
     new window.daum.Postcode({
-      oncomplete: (data) => {
+      oncomplete: async (data) => {
         const addr = data.roadAddress || data.jibunAddress
         setAddress(addr)
         setHoNm('')
@@ -66,7 +66,16 @@ export default function SearchPage({ onSearch }) {
         const sigunguCd = data.sigunguCode || (data.bcode ? data.bcode.substring(0, 5) : '')
         const bjdongCd = data.bcode ? data.bcode.substring(5, 10) : ''
 
-        setJibunData({ sigunguCd, bjdongCd, bun, ji, bcode: data.bcode, coords: null })
+        let coords = null
+        try {
+          const response = await fetch(`/api/geocode?address=${encodeURIComponent(addr)}`)
+          const geocode = await response.json()
+          coords = geocode?.success ? geocode.coords : null
+        } catch (e) {
+          console.error('주소 좌표 변환 실패:', e)
+        }
+
+        setJibunData({ sigunguCd, bjdongCd, bun, ji, bcode: data.bcode, coords })
       },
     }).open()
   }

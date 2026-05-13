@@ -22,6 +22,19 @@ const geocodeAddress = async (address) => {
   return { lat: Number(first.y), lon: Number(first.x) }
 }
 
+const getDongCenterCoords = (items) => {
+  const coords = (items || [])
+    .map(item => ({ lat: Number(item.lat), lon: Number(item.lon) }))
+    .filter(item => Number.isFinite(item.lat) && Number.isFinite(item.lon))
+  if (!coords.length) return null
+  const sum = coords.reduce((acc, item) => {
+    acc.lat += item.lat
+    acc.lon += item.lon
+    return acc
+  }, { lat: 0, lon: 0 })
+  return { lat: sum.lat / coords.length, lon: sum.lon / coords.length }
+}
+
 const fetchPage = async (divId, key, pageNo) => {
   const params = new URLSearchParams({
     serviceKey: API_KEY,
@@ -88,6 +101,11 @@ export default async function handler(req, res) {
     }
 
     const dongFiltered = ldongCd ? source.items.filter(item => item.ldongCd === ldongCd) : source.items
+    if (!centerCoords) {
+      centerCoords = getDongCenterCoords(dongFiltered)
+      centerLat = Number(centerCoords?.lat)
+      centerLon = Number(centerCoords?.lon)
+    }
     const hasCenter = Number.isFinite(centerLat) && Number.isFinite(centerLon)
     const radiusFiltered = hasCenter
       ? dongFiltered.filter(item => {
