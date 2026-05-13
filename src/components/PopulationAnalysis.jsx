@@ -18,6 +18,14 @@ const CATEGORIES = {
   'K1': { label: '기관·단체', icon: '🏛️', color: '#D4E8B8' },
 }
 
+function getDistance(lat1, lon1, lat2, lon2) {
+  const R = 6371000
+  const dLat = (lat2 - lat1) * Math.PI / 180
+  const dLon = (lon2 - lon1) * Math.PI / 180
+  const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180) * Math.sin(dLon/2)**2
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a))
+}
+
 function SubItem({ name, stores }) {
   const [open, setOpen] = useState(false)
   return (
@@ -83,19 +91,19 @@ function CategoryDetail({ cd, items }) {
   )
 }
 
-export default function PopulationAnalysis({ coords }) {
+export default function PopulationAnalysis({ bjdongCode, coords }) {
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(false)
   const [selected, setSelected] = useState([])
+  const RADIUS = 500
 
   useEffect(() => {
-    // 좌표(coords)가 있을 때만 반경 데이터를 가져옵니다.
-    if (!coords) return
+    if (!bjdongCode) return
     setLoading(true)
-    getStoreList(coords)
+    getStoreList(bjdongCode)
       .then(setData)
       .finally(() => setLoading(false))
-  }, [coords])
+  }, [bjdongCode])
 
   if (loading) return (
     <div style={{background:'#fff', borderRadius:'20px', padding:'24px', textAlign:'center', color:'#86868b', fontSize:'14px'}}>
@@ -104,7 +112,10 @@ export default function PopulationAnalysis({ coords }) {
   )
   if (!data?.items) return null
 
-  const items = data.items
+  const items = coords
+    ? data.items.filter(item => item.lat && item.lon && getDistance(coords.lat, coords.lon, item.lat, item.lon) <= RADIUS)
+    : data.items
+
   const grouped = {}
   items.forEach(item => {
     const cd = item.indsLclsCd
@@ -116,9 +127,10 @@ export default function PopulationAnalysis({ coords }) {
 
   return (
     <div style={{background:'#fff', borderRadius:'20px', padding:'20px', boxShadow:'0 1px 3px rgba(0,0,0,0.05)'}}>
-      <div style={{fontSize:'13px', fontWeight:'600', color:'#86868b', marginBottom:'4px'}}>🔍 상권 분석 (반경 500m)</div>
+      <div style={{fontSize:'13px', fontWeight:'600', color:'#86868b', marginBottom:'4px'}}>🔍 상권 분석</div>
       <div style={{display:'flex', alignItems:'baseline', gap:'8px', marginBottom:'16px'}}>
         <div style={{fontSize:'24px', fontWeight:'800', color:'#1d1d1f'}}>총 {items.length.toLocaleString()}개 업소</div>
+        {coords && <div style={{fontSize:'12px', color:'#86868b'}}>반경 500m 이내</div>}
       </div>
 
       <div style={{display:'flex', flexWrap:'wrap', gap:'8px', marginBottom:'4px'}}>
