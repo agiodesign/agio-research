@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { getBuildingInfo, getFloorInfo, getUnitInfo } from '../api/building'
+import { getPopulationSummary, renderKakaoRadiusMap } from '../api/kakaoMapService'
 import PopulationAnalysis from '../components/PopulationAnalysis';
 
 const S = {
@@ -16,6 +17,11 @@ const S = {
   unitCard: { background:'#1d1d1f', borderRadius:'20px', padding:'24px', color:'#fff', boxShadow: '0 10px 20px rgba(0,0,0,0.1)', display:'flex', flexDirection:'column', gap:'12px' },
   section: { background:'#fff', borderRadius:'20px', padding:'20px', boxShadow:'0 1px 3px rgba(0,0,0,0.05)' },
   sectionTitle: { fontSize:'13px', fontWeight:'600', color:'#86868b', marginBottom:'16px', display: 'flex', alignItems: 'center', gap: '6px' },
+  mapBox: { width:'100%', height:'260px', borderRadius:'16px', overflow:'hidden', background:'#f5f5f7', border:'1px solid #e5e5e5' },
+  summaryGrid: { display:'grid', gridTemplateColumns:'repeat(3, 1fr)', gap:'8px', marginTop:'14px' },
+  summaryItem: { background:'#f5f5f7', borderRadius:'12px', padding:'12px', minWidth:0 },
+  summaryLabel: { fontSize:'11px', color:'#86868b', marginBottom:'4px', whiteSpace:'nowrap' },
+  summaryValue: { fontSize:'15px', color:'#1d1d1f', fontWeight:'800', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' },
   stackContainer: { display: 'flex', flexDirection: 'column-reverse', gap: '4px', background: '#f5f5f7', padding: '10px', borderRadius: '14px', maxHeight: '420px', overflowY: 'auto', WebkitOverflowScrolling: 'touch' },
   stackLevel: { minHeight: '38px', display: 'flex', alignItems: 'center', padding: '0 12px', borderRadius: '8px', fontSize: '12px', fontWeight: '500', transition: 'all 0.3s ease' },
   infoRow: { display:'flex', justifyContent:'space-between', padding:'12px 0', borderBottom:'1px solid #f5f5f7' },
@@ -58,11 +64,23 @@ function BuildingStack({ floors, selectedHo }) {
 }
 
 export default function ResultPage({ data, onBack }) {
+  const mapRef = useRef(null)
   const [building, setBuilding] = useState(null)
   const [floors, setFloors] = useState([])
   const [unit, setUnit] = useState(null)
   const [loading, setLoading] = useState(false)
+  const [populationSummary, setPopulationSummary] = useState(null)
   const isBuilding = data.mode === 'building' || !data.mode
+
+  useEffect(() => {
+    if (!mapRef.current || !data.jibunData?.coords) return
+    renderKakaoRadiusMap(mapRef.current, data.jibunData.coords, data.address)
+  }, [data])
+
+  useEffect(() => {
+    if (!data.jibunData?.bcode) return
+    getPopulationSummary(data.jibunData.bcode, data.jibunData?.coords).then(setPopulationSummary)
+  }, [data])
 
   useEffect(() => {
     if (!isBuilding) return
@@ -106,6 +124,27 @@ export default function ResultPage({ data, onBack }) {
       </div>
 
       <div style={S.body}>
+        {data.jibunData?.coords && (
+          <div style={S.section}>
+            <div style={S.sectionTitle}>카카오맵 반경 500m</div>
+            <div ref={mapRef} style={S.mapBox} />
+            <div style={S.summaryGrid}>
+              <div style={S.summaryItem}>
+                <div style={S.summaryLabel}>반경 내 업소</div>
+                <div style={S.summaryValue}>{populationSummary?.success ? `${populationSummary.radiusCount.toLocaleString()}개` : '-'}</div>
+              </div>
+              <div style={S.summaryItem}>
+                <div style={S.summaryLabel}>법정동 전체</div>
+                <div style={S.summaryValue}>{populationSummary?.success ? `${populationSummary.totalCount.toLocaleString()}개` : '-'}</div>
+              </div>
+              <div style={S.summaryItem}>
+                <div style={S.summaryLabel}>최다 업종</div>
+                <div style={S.summaryValue}>{populationSummary?.success ? populationSummary.topCategoryName : '-'}</div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {isBuilding && (
           <>
             {unit ? (
