@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { getStoreList } from '../api/analysis';
+import { filterWithinRadius } from '../utils/distance';
 
 const CATEGORIES = {
   'I2': { label: '음식', icon: '🍽️', color: '#FF6B6B' },
@@ -16,14 +17,6 @@ const CATEGORIES = {
   'H2': { label: '관광·여행', icon: '✈️', color: '#B3D9FF' },
   'J1': { label: '금융·보험', icon: '🏦', color: '#C8B8E8' },
   'K1': { label: '기관·단체', icon: '🏛️', color: '#D4E8B8' },
-}
-
-function getDistance(lat1, lon1, lat2, lon2) {
-  const R = 6371000
-  const dLat = (lat2 - lat1) * Math.PI / 180
-  const dLon = (lon2 - lon1) * Math.PI / 180
-  const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180) * Math.sin(dLon/2)**2
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a))
 }
 
 function SubItem({ name, stores }) {
@@ -95,7 +88,6 @@ export default function PopulationAnalysis({ bjdongCode, areaData, coords, addre
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(false)
   const [selected, setSelected] = useState([])
-  const RADIUS = 500
 
   useEffect(() => {
     if (!areaData && !bjdongCode) return
@@ -112,9 +104,7 @@ export default function PopulationAnalysis({ bjdongCode, areaData, coords, addre
   )
   if (!data?.items) return null
 
-  const items = coords
-    ? data.items.filter(item => item.lat && item.lon && getDistance(coords.lat, coords.lon, item.lat, item.lon) <= RADIUS)
-    : data.items
+  const items = filterWithinRadius(data.items, coords)
 
   const grouped = {}
   items.forEach(item => {

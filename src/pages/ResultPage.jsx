@@ -77,9 +77,7 @@ export default function ResultPage({ data, onBack }) {
       try {
         setMarketLoading(true)
         const summary = await getStoreSummary(data.jibunData, data.jibunData?.coords, data.address)
-        if (summary?.radiusCount >= 1000) {
-          console.warn('반경 500m 업소 수가 1,000개 이상입니다. 서버 거리 필터와 좌표를 다시 확인하세요.', summary)
-        }
+        console.log(`실제 500m 이내 필터링 완료: ${summary?.radiusCount || 0}개`)
         setMarketSummary(summary)
       } catch (e) {
         console.error(e)

@@ -116,15 +116,7 @@ export default async function handler(req, res) {
         })
       : []
 
-    if (radiusFiltered.length >= 1000) {
-      console.warn('반경 500m 필터 결과가 1,000개 이상입니다. 중심 좌표와 거리 필터를 점검하세요.', {
-        address,
-        centerCoords,
-        sourceScope,
-        dongFilteredCount: dongFiltered.length,
-        filteredCount: radiusFiltered.length,
-      })
-    }
+    console.log(`실제 500m 이내 필터링 완료: ${radiusFiltered.length}개`)
 
     res.status(200).json({
       totalCount: source.totalCount,

@@ -46,7 +46,9 @@ export const getStoreSummary = async (areaData, coords, address) => {
     const params = buildPopulationParams(areaData, coords, address)
     const response = await fetch(`/api/population?${params}`)
     const data = await response.json()
-    const items = Array.isArray(data?.items) ? data.items : []
+    const center = data?.centerCoords || coords || null
+    const items = filterWithinRadius(Array.isArray(data?.items) ? data.items : [], center)
+    console.log(`실제 500m 이내 필터링 완료: ${items.length}개`)
     const categoryCounts = items.reduce((acc, item) => {
       const name = item.indsLclsNm || item.indsLclsCd || '기타'
       acc[name] = (acc[name] || 0) + 1
@@ -58,14 +60,16 @@ export const getStoreSummary = async (areaData, coords, address) => {
       success: !data?.error,
       totalCount: data?.dongFilteredCount ?? items.length,
       sourceTotalCount: data?.totalCount ?? items.length,
-      radiusCount: data?.filteredCount ?? items.length,
+      radiusCount: items.length,
       topCategoryName: topCategory?.[0] || '-',
       topCategoryCount: topCategory?.[1] || 0,
-      coords: data?.centerCoords || coords || null,
-      raw: data,
+      coords: center,
+      items,
+      raw: { ...data, items, filteredCount: items.length },
     }
   } catch (error) {
     console.error('상권 요약 데이터 로드 실패:', error)
     return { success: false, error: error.message }
   }
 }
+import { filterWithinRadius } from '../utils/distance'
