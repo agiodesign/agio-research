@@ -136,10 +136,15 @@ export async function getPopulationSummary(bcode, coords) { // 기존 상권 API
     const signguCd = bcode.substring(0, 5) // 기존 population API가 쓰는 시군구 코드를 법정동 코드 앞 5자리에서 꺼냅니다.
     const ldongCd = bcode // 기존 population API가 쓰는 법정동 코드는 전체 bcode를 그대로 사용합니다.
     const params = new URLSearchParams({ signguCd, ldongCd }) // 기존 api/population.js가 받는 쿼리 파라미터를 그대로 구성합니다.
+    const fixedCoords = normalizeCoords(coords) // 반경 필터에 사용할 좌표를 숫자 형태로 정리합니다.
+    if (fixedCoords) { // 좌표가 있으면 서버에서도 500m 필터를 적용하도록 파라미터를 추가합니다.
+      params.set('lat', fixedCoords.lat) // 중심점 위도를 API에 전달합니다.
+      params.set('lon', fixedCoords.lon) // 중심점 경도를 API에 전달합니다.
+      params.set('radius', String(RADIUS_METER)) // 필터 반경 500m를 API에 전달합니다.
+    } // 서버 필터 파라미터 추가를 끝냅니다.
     const response = await fetch(`/api/population?${params}`) // 기존 상권 API 엔드포인트를 호출합니다.
     const data = await response.json() // API 응답을 JSON으로 변환합니다.
     const sourceItems = Array.isArray(data?.items) ? data.items : [] // items 배열이 있으면 사용하고 없으면 빈 배열로 안전하게 처리합니다.
-    const fixedCoords = normalizeCoords(coords) // 반경 필터에 사용할 좌표를 숫자 형태로 정리합니다.
     const radiusItems = fixedCoords ? sourceItems.filter((item) => item.lat && item.lon && getDistance(fixedCoords.lat, fixedCoords.lon, item.lat, item.lon) <= RADIUS_METER) : sourceItems // 좌표가 있으면 500m 안 업소만 남깁니다.
     const categoryCounts = radiusItems.reduce((acc, item) => { // 업종 대분류별 개수를 누적합니다.
       const name = item.indsLclsNm || item.indsLclsCd || '기타' // 업종명이 없으면 업종 코드나 기타로 표시합니다.
@@ -150,7 +155,8 @@ export async function getPopulationSummary(bcode, coords) { // 기존 상권 API
 
     return { // 화면에서 바로 사용할 수 있는 요약 데이터를 반환합니다.
       success: true, // 요약 생성 성공 여부입니다.
-      totalCount: data?.totalCount || sourceItems.length, // API 전체 개수 또는 실제 배열 길이를 표시합니다.
+      totalCount: data?.dongFilteredCount ?? sourceItems.length, // 시군구 원본 수가 아니라 법정동으로 좁힌 개수를 표시합니다.
+      sourceTotalCount: data?.totalCount || sourceItems.length, // 데이터 소스 검증용 원본 전체 개수입니다.
       radiusCount: radiusItems.length, // 반경 500m 안 업소 수입니다.
       topCategoryName: topCategory?.[0] || '-', // 가장 많은 업종명입니다.
       topCategoryCount: topCategory?.[1] || 0, // 가장 많은 업종의 개수입니다.

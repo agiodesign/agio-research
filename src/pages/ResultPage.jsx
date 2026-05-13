@@ -30,6 +30,25 @@ const S = {
   badge: { padding:'4px 10px', borderRadius:'8px', fontSize:'11px', fontWeight:'700', background:'#f5f5f7', color:'#48484a' }
 }
 
+function waitForKakaoBeforeRender(maxRetry = 5, delayMs = 500) {
+  return new Promise((resolve) => {
+    let retryCount = 0
+    const checkReady = () => {
+      if (window.kakao?.maps) {
+        resolve(true)
+        return
+      }
+      retryCount += 1
+      if (retryCount >= maxRetry) {
+        resolve(false)
+        return
+      }
+      setTimeout(checkReady, delayMs)
+    }
+    checkReady()
+  })
+}
+
 function BuildingStack({ floors, selectedHo }) {
   const targetFloorNm = selectedHo ? (selectedHo.length >= 3 ? selectedHo.slice(0, -2) : selectedHo.charAt(0)) : null;
   const sortedFloors = [...floors].sort((a, b) => {
@@ -78,8 +97,10 @@ export default function ResultPage({ data, onBack }) {
     mapRef.current.style.setProperty('height', '300px', 'important')
     mapRef.current.style.setProperty('min-height', '300px', 'important')
     mapRef.current.style.setProperty('display', 'block', 'important')
-    renderKakaoRadiusMap(mapRef.current, data.jibunData?.coords, data.address).then((result) => {
-      if (result?.success && result.coords) setRecoveredCoords(result.coords)
+    waitForKakaoBeforeRender().then(() => {
+      renderKakaoRadiusMap(mapRef.current, data.jibunData?.coords, data.address).then((result) => {
+        if (result?.success && result.coords) setRecoveredCoords(result.coords)
+      })
     })
   }, [data])
 

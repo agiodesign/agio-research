@@ -100,10 +100,10 @@ export default function PopulationAnalysis({ bjdongCode, coords }) {
   useEffect(() => {
     if (!bjdongCode) return
     setLoading(true)
-    getStoreList(bjdongCode)
+    getStoreList(bjdongCode, coords)
       .then(setData)
       .finally(() => setLoading(false))
-  }, [bjdongCode])
+  }, [bjdongCode, coords])
 
   if (loading) return (
     <div style={{background:'#fff', borderRadius:'20px', padding:'24px', textAlign:'center', color:'#86868b', fontSize:'14px'}}>
