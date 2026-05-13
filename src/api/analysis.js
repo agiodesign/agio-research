@@ -1,13 +1,8 @@
-export const getStoreList = async (coords) => {
+export const getStoreList = async (bcode) => {
   try {
-    if (!coords || !coords.lat || !coords.lon) return null
-    
-    // 좌표 정보와 반경(500m)을 서버 파라미터로 전달
-    const params = new URLSearchParams({ 
-      lat: coords.lat, 
-      lon: coords.lon, 
-      radius: 500 
-    })
+    const signguCd = bcode.substring(0, 5)
+    const ldongCd = bcode
+    const params = new URLSearchParams({ signguCd, ldongCd })
     const response = await fetch(`/api/population?${params}`)
     return await response.json()
   } catch (error) {
