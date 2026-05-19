@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNaverMaps } from '../hooks/useNaverMaps';
 
 export default function BuildingMap({ coords, address, height = 400 }) {
@@ -6,12 +6,31 @@ export default function BuildingMap({ coords, address, height = 400 }) {
   const mapInstance = useRef(null);
   const markerInstance = useRef(null);
   const { loaded, error } = useNaverMaps();
+  const [resolvedCoords, setResolvedCoords] = useState(coords);
 
+  // coords가 없으면 네이버 geocoder로 직접 변환
   useEffect(() => {
-    if (!loaded || !coords || !mapRef.current) return;
+    if (coords) {
+      setResolvedCoords(coords);
+      return;
+    }
+    if (!loaded || !address) return;
+
+    window.naver.maps.Service.geocode({ query: address }, (status, response) => {
+      if (status !== window.naver.maps.Service.Status.OK) return;
+      const result = response.v2.addresses?.[0];
+      if (result) {
+        setResolvedCoords({ lat: parseFloat(result.y), lon: parseFloat(result.x) });
+      }
+    });
+  }, [loaded, coords, address]);
+
+  // 지도 생성/갱신
+  useEffect(() => {
+    if (!loaded || !resolvedCoords || !mapRef.current) return;
 
     const { naver } = window;
-    const position = new naver.maps.LatLng(coords.lat, coords.lon);
+    const position = new naver.maps.LatLng(resolvedCoords.lat, resolvedCoords.lon);
 
     if (!mapInstance.current) {
       mapInstance.current = new naver.maps.Map(mapRef.current, {
@@ -28,7 +47,7 @@ export default function BuildingMap({ coords, address, height = 400 }) {
       mapInstance.current.setCenter(position);
       markerInstance.current.setPosition(position);
     }
-  }, [loaded, coords]);
+  }, [loaded, resolvedCoords]);
 
   useEffect(() => () => {
     markerInstance.current?.setMap(null);
@@ -45,13 +64,13 @@ export default function BuildingMap({ coords, address, height = 400 }) {
     );
   }
 
-  if (!coords) {
+  if (!resolvedCoords) {
     return (
       <div style={{
         height, display: 'flex', alignItems: 'center', justifyContent: 'center',
         background: '#f5f5f3', borderRadius: 8, color: '#888', fontSize: 14
       }}>
-        주소 좌표를 불러오는 중...
+        지도를 불러오는 중...
       </div>
     );
   }

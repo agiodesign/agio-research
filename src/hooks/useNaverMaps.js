@@ -17,7 +17,7 @@ function loadNaverMaps() {
     const script = document.createElement('script');
     script.id = SCRIPT_ID;
     // 좌표는 카카오 geocoder로 받으니까 submodules 없이 가벼운 로드
-    script.src = `https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=${CLIENT_ID}`;
+    script.src = `https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=${CLIENT_ID}&submodules=geocoder`;
     script.async = true;
     script.onload = () => resolve(window.naver);
     script.onerror = (e) => {
