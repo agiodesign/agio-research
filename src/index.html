@@ -6,14 +6,15 @@
     <title>AGIO Research</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <script>
-      window.kakaoMapLoaded = false;
-    </script>
-    <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=a9e1d634eecda9556876d1e4fa722cee&libraries=services&autoload=false"></script>
+
+    <!-- 카카오 지도 SDK (services 라이브러리 포함) -->
+    <script src="//dapi.kakao.com/v2/maps/sdk.js?appkey=a9e1d634eecda9556876d1e4fa722cee&libraries=services"></script>
+
+    <!-- 다음 우편번호 (이게 빠져있었음!) -->
+    <script src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
-    <script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=a9e1d634eecda9556876d1e4fa722cee&libraries=services"></script>
   </body>
 </html>

@@ -31,9 +31,13 @@ export default function SearchPage({ onSearch }) {
   const [client, setClient] = useState('')
   const [site, setSite] = useState('')
 
-  const openAddr = () => {
+   const openAddr = () => {
+    const layer = document.getElementById('postcode-layer')
+    layer.style.display = 'flex'
+
     new window.daum.Postcode({
       oncomplete: (data) => {
+        layer.style.display = 'none'
         const addr = data.roadAddress || data.jibunAddress
         setAddress(addr)
         setHoNm('')
@@ -59,7 +63,7 @@ export default function SearchPage({ onSearch }) {
           setJibunData({ sigunguCd, bjdongCd, bun, ji, bcode: data.bcode, coords: null })
         }
       },
-    }).open()
+    }).embed(document.getElementById('postcode-embed'))
   }
 
   const handleSubmit = () => {
@@ -68,7 +72,19 @@ export default function SearchPage({ onSearch }) {
   }
 
   return (
-    <div style={S.wrap}>
+    <>
+      <div id="postcode-layer" style={{
+        display:'none', position:'fixed', top:0, left:0, right:0, bottom:0,
+        zIndex:9999, background:'rgba(0,0,0,0.4)', justifyContent:'center', alignItems:'center',
+      }}>
+        <div style={{ width:'400px', height:'500px', background:'#fff', borderRadius:'16px', overflow:'hidden', position:'relative' }}>
+          <button onClick={() => document.getElementById('postcode-layer').style.display='none'}
+            style={{ position:'absolute', top:8, right:12, zIndex:1, background:'none', border:'none', fontSize:'20px', cursor:'pointer', color:'#666' }}>✕</button>
+          <div id="postcode-embed" style={{ width:'100%', height:'100%' }} />
+        </div>
+      </div>
+
+      <div style={S.wrap}>
       <div style={S.logo}>AGIO DESIGN</div>
       <div style={S.title}>상권 분석 리서치</div>
       <div style={S.sub}>주소를 입력하면 건물정보 인구 교육환경을 한번에 분석해드립니다</div>
@@ -132,5 +148,6 @@ export default function SearchPage({ onSearch }) {
         </button>
       </div>
     </div>
+    </>
   )
 }

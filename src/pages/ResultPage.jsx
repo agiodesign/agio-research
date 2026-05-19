@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { getBuildingInfo, getFloorInfo, getUnitInfo } from '../api/building'
 import PopulationAnalysis from '../components/PopulationAnalysis';
+import BuildingMap from '../components/BuildingMap';  // ← 이 줄 추가
 
 const S = {
   wrap: { minHeight:'100vh', background:'#f5f5f7', paddingBottom: '60px' },
@@ -108,6 +109,16 @@ export default function ResultPage({ data, onBack }) {
       <div style={S.body}>
         {isBuilding && (
           <>
+                      {/* 🗺️ 위치 지도 */}
+            <div style={S.section}>
+              <div style={S.sectionTitle}>📍 위치</div>
+              <BuildingMap 
+                coords={data.jibunData?.coords} 
+                address={data.address} 
+                height={300} 
+              />
+            </div>
+
             {unit ? (
               <div style={S.unitCard}>
                 <div style={{display:'flex', justifyContent:'space-between', alignItems:'flex-start'}}>
